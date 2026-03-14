@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #e5e7eb;
+  
+  --radar-dark: #0a0a0a;
+  --radar-panel: #121212;
+  --radar-border: #1f1f1f;
+  --radar-red: #e11d48;
+  --radar-orange: #f59e0b;
+  --radar-cyan: #06b6d4;
+  --radar-teal: #14b8a6;
+  --radar-accent: #e11d48;
+  
+  --accent-red: #ef4444;
+  --accent-orange: #f59e0b;
+  --accent-yellow: #eab308;
+  --accent-green: #22c55e;
+  --accent-cyan: #06b6d4;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  
+  --color-radar-dark: var(--radar-dark);
+  --color-radar-panel: var(--radar-panel);
+  --color-radar-border: var(--radar-border);
+  --color-radar-red: var(--radar-red);
+  --color-radar-orange: var(--radar-orange);
+  --color-radar-cyan: var(--radar-cyan);
+  --color-radar-teal: var(--radar-teal);
+  --color-radar-accent: var(--radar-accent);
+  
+  --color-accent-red: var(--accent-red);
+  --color-accent-orange: var(--accent-orange);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-accent-green: var(--accent-green);
+  --color-accent-cyan: var(--accent-cyan);
+}
+
+body {
+  background-color: var(--radar-dark);
+  color: var(--foreground);
+  overflow: hidden;
+  height: 100vh;
+}
+
+.scanline {
+  width: 100%;
+  height: 100px;
+  z-index: 5;
+  background: linear-gradient(0deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0) 100%);
+  opacity: 0.1;
+  position: absolute;
+  bottom: 100%;
+  animation: scanline 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanline {
+  0% { bottom: 100%; }
+  100% { bottom: -100px; }
+}
+
+.hotspot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  box-shadow: 0 0 15px #ef4444, 0 0 30px #ef4444;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #e11d48;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
