@@ -1,4 +1,5 @@
 
+import { IntelligenceBriefing } from './IntelligenceBriefing';
 
 export function TopNav() {
   return (
@@ -14,6 +15,7 @@ export function TopNav() {
         </div>
       </div>
       <div className="flex items-center gap-12">
+        <IntelligenceBriefing />
         <div className="text-center group cursor-help">
           <div className="text-2xl font-black text-radar-red leading-none animate-pulse">WAR</div>
           <div className="text-[10px] uppercase tracking-widest text-gray-500 mt-1">Status: Active</div>

@@ -8,6 +8,7 @@ from backend.antigravity.fetcher.sources.indicators import fetch_indicators
 from backend.antigravity.fetcher.sources.currency import fetch_currency_rates
 from backend.antigravity.fetcher.sources.scraper import fetch_ground_truth
 from backend.antigravity.fetcher.sentiment import process_latest_sentiment
+from backend.antigravity.fetcher.briefing import generate_situational_briefing
 
 def run_all_fetchers():
     print(f"--- Starting Data Aggregation Pulse: {time.ctime()} ---")
@@ -25,6 +26,7 @@ def run_all_fetchers():
     fetch_gdelt_vibe()
     fetch_ground_truth()
     process_latest_sentiment()
+    generate_situational_briefing()
     
     # Social Indicators
     fetch_indicators()
