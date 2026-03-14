@@ -86,22 +86,22 @@ export function RegionalRisk() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {regions.map((region) => (
-          <div key={region.name} className={`bg-radar-panel border-l-2 ${region.name === 'War & Conflict' ? 'border-radar-red' : 'border-radar-cyan'} rounded p-5 border-y border-r border-radar-border transition-all hover:bg-radar-panel/80`}>
+          <div key={region.name} className={`bg-radar-panel border-l-2 border-radar-red rounded p-5 border-y border-r border-radar-border transition-all hover:bg-radar-panel/80`}>
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h4 className="text-lg font-black uppercase tracking-tight text-white">{region.name}</h4>
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest">{region.desc}</p>
               </div>
-              <span className={`${region.name === 'War & Conflict' ? 'bg-radar-red/20 text-radar-red border-radar-red/30' : 'bg-radar-cyan/20 text-radar-cyan border-radar-cyan/30'} text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider border`}>{region.risk}</span>
+              <span className={`bg-radar-red/20 text-radar-red border-radar-red/30 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider border`}>{region.risk}</span>
             </div>
             <div className="grid grid-cols-3 gap-3 mb-6">
               <div className="bg-radar-dark p-2 rounded text-center border border-radar-border">
                 <p className="text-[8px] text-gray-500 font-bold uppercase mb-1">Index</p>
-                <p className={`text-lg font-black ${region.name === 'War & Conflict' ? 'text-radar-red' : 'text-radar-cyan'}`}>{region.unrest}</p>
+                <p className={`text-lg font-black text-radar-red`}>{region.unrest}</p>
               </div>
               <div className="bg-radar-dark p-2 rounded text-center border border-radar-border">
                 <p className="text-[8px] text-gray-500 font-bold uppercase mb-1">Status</p>
-                <p className={`text-lg font-black ${region.name === 'War & Conflict' ? 'text-radar-red' : 'text-radar-teal'}`}>{region.food}</p>
+                <p className={`text-lg font-black text-radar-orange`}>{region.food}</p>
               </div>
               <div className="bg-radar-dark p-2 rounded text-center border border-radar-border">
                 <p className="text-[8px] text-gray-500 font-bold uppercase mb-1">Impact</p>
@@ -110,11 +110,11 @@ export function RegionalRisk() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[10px] font-bold uppercase text-gray-400">
-                <span>{region.name === 'War & Conflict' ? 'Active Conflicts' : 'Active Markers'}</span>
+                <span>Active Conflicts</span>
                 <span className="text-white">{region.active}</span>
               </div>
               <div className="h-1 bg-radar-border rounded-full overflow-hidden">
-                <div className={`h-full ${region.name === 'War & Conflict' ? 'bg-radar-red' : 'bg-radar-cyan'}`} style={{ width: `${region.progress}%` }}></div>
+                <div className={`h-full bg-radar-red transition-all duration-1000`} style={{ width: `${region.progress}%` }}></div>
               </div>
             </div>
           </div>

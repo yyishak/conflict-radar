@@ -32,7 +32,7 @@ export function EconomicSidebar() {
     <aside className="w-80 border-l border-radar-border bg-radar-dark flex flex-col z-20 shrink-0 overflow-hidden">
       <div className="p-4 border-b border-radar-border flex justify-between items-center bg-radar-panel/50">
         <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Economic Intel</h2>
-        <span className="text-[9px] text-radar-cyan animate-pulse uppercase font-mono">Live Stream</span>
+        <span className="text-[9px] text-radar-red animate-pulse uppercase font-mono">Live Stream</span>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar">
         {/* Currency Section */}
@@ -53,18 +53,18 @@ export function EconomicSidebar() {
               </div>
               <div className="text-right">
                 <p className="text-[8px] text-gray-500 uppercase font-bold">Parallel</p>
-                <p className="text-xl font-black text-radar-teal">{blackMarketRate}</p>
+                <p className="text-xl font-black text-radar-red">{blackMarketRate}</p>
               </div>
             </div>
 
             {expandedSection === 'currency' && (
-              <div className="p-3 bg-radar-cyan/5 border border-radar-cyan/20 text-[10px] text-gray-400 space-y-2 animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-3 bg-radar-red/5 border border-radar-red/20 text-[10px] text-gray-400 space-y-2 animate-in fade-in zoom-in-95 duration-200">
                 <p className="italic">Analysis: Parallel market premium remains elevated at 25.4% due to interbank liquidity constraints. Historical trend suggests seasonal volatility in Q3.</p>
                 <div className="h-12 w-full bg-radar-dark/50 overflow-hidden relative border border-radar-border/30">
                   <div className="absolute inset-0 flex items-end">
-                    <div className="w-full h-1/2 bg-gradient-to-t from-radar-cyan/20 to-transparent"></div>
+                    <div className="w-full h-1/2 bg-gradient-to-t from-radar-red/20 to-transparent"></div>
                   </div>
-                  <div className="absolute bottom-2 left-2 text-[8px] font-mono text-radar-cyan">SPREAD: +29.08 ETB</div>
+                  <div className="absolute bottom-2 left-2 text-[8px] font-mono text-radar-red">SPREAD: +29.08 ETB</div>
                 </div>
               </div>
             )}
@@ -106,9 +106,9 @@ export function EconomicSidebar() {
           className="space-y-3 cursor-pointer group"
         >
           <h3 className="text-[10px] uppercase text-gray-500 font-bold tracking-widest group-hover:text-white transition-colors">Macro Stability</h3>
-          <div className="p-3 bg-radar-panel/50 border border-radar-border flex justify-between items-center transition-all group-hover:border-radar-cyan/30">
+          <div className="p-3 bg-radar-panel/50 border border-radar-border flex justify-between items-center transition-all group-hover:border-radar-red/30">
             <span className="text-xs font-bold text-gray-400 uppercase">Annual Inflation</span>
-            <span className="text-sm text-radar-cyan font-mono font-bold">34.2%</span>
+            <span className="text-sm text-radar-red font-mono font-bold">34.2%</span>
           </div>
           {expandedSection === 'inflation' && (
             <div className="p-3 bg-radar-panel/20 border border-radar-border text-[9px] text-gray-400 leading-relaxed italic animate-in fade-in duration-200">
@@ -120,11 +120,11 @@ export function EconomicSidebar() {
         <div className="pt-4 border-t border-radar-border/50">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-[10px] uppercase text-gray-500 font-bold tracking-widest text-white">Sentiment Pulse</h3>
-            <span className="text-[10px] font-mono text-radar-cyan">{getVal('Social Sentiment Pulse', '-2.4')}</span>
+            <span className="text-[10px] font-mono text-radar-red">{getVal('Social Sentiment Pulse', '-2.4')}</span>
           </div>
           <div className="w-full bg-radar-panel h-2 overflow-hidden border border-radar-border/30 relative">
             <div 
-              className="bg-radar-cyan h-full transition-all duration-1000 relative" 
+              className="bg-radar-red h-full transition-all duration-1000 relative" 
               style={{ width: `${Math.abs(Number(getVal('Social Sentiment Pulse', -2.4))) * 10}%`, marginLeft: Number(getVal('Social Sentiment Pulse', -2.4)) > 0 ? '50%' : 'auto', marginRight: Number(getVal('Social Sentiment Pulse', -2.4)) < 0 ? '50%' : 'auto' }}
             >
               <div className="absolute inset-0 bg-white/20 animate-scan"></div>

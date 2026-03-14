@@ -20,7 +20,7 @@ export default function GlobeMap({ events, onEventClick }: GlobeMapProps) {
   const memoizedPolygons = useMemo(() => countries.features, [countries.features]);
   
   const polygonCapColor = useMemo(() => () => 'rgba(18, 18, 18, 0.7)', []);
-  const polygonStrokeColor = useMemo(() => () => '#06b6d4', []);
+  const polygonStrokeColor = useMemo(() => () => '#e11d48', []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -61,8 +61,8 @@ export default function GlobeMap({ events, onEventClick }: GlobeMapProps) {
   const getEventColor = (category: string, current_score: number) => {
     const heat = Math.max(0.6, Math.min(current_score / 10, 1.0));
     if (category === 'Kinetic') return `rgba(225, 29, 72, ${heat})`;
-    if (category === 'Tactical') return `rgba(6, 182, 212, ${heat})`;
-    return `rgba(20, 184, 166, ${heat})`;
+    if (category === 'Tactical') return `rgba(245, 158, 11, ${heat})`;
+    return `rgba(34, 197, 94, ${heat})`;
   };
 
   return (
@@ -75,11 +75,11 @@ export default function GlobeMap({ events, onEventClick }: GlobeMapProps) {
         bumpImageUrl={null}
         backgroundColor="rgba(0,0,0,0)"
         showAtmosphere={true}
-        atmosphereColor="#06b6d4"
-        atmosphereAltitude={0.15}
+        atmosphereColor="#e11d48"
+        atmosphereAltitude={0.1}
         polygonsData={memoizedPolygons}
         polygonCapColor={polygonCapColor}
-        polygonSideColor={() => 'rgba(6, 182, 212, 0.05)'}
+        polygonSideColor={() => 'rgba(225, 29, 72, 0.05)'}
         polygonStrokeColor={polygonStrokeColor}
         polygonsTransitionDuration={0}
         ringsData={events}
