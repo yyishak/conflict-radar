@@ -34,7 +34,17 @@ def run_all_fetchers():
     
     print(f"--- Completed Data Aggregation Pulse: {time.ctime()} ---")
 
+import sys
+
 def main():
+    # Check for --single-run flag
+    single_run = "--single-run" in sys.argv
+    
+    if single_run:
+        print("Running in single-run mode...")
+        run_all_fetchers()
+        return
+
     # Initial run
     run_all_fetchers()
     
