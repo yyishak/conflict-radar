@@ -1,0 +1,28 @@
+# Dependency directories
+node_modules/
+backend/.venv/
+__pycache__/
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Project specific
+.gemini/
+backend/antigravity/fetcher/__pycache__/

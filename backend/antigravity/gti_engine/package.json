@@ -1,0 +1,14 @@
+{
+  "name": "gti-engine",
+  "version": "1.0.0",
+  "description": "Antigravity Global Tension Index Engine",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.0",
+    "ioredis": "^5.3.2",
+    "ws": "^8.16.0"
+  }
+}
