@@ -1,51 +1,181 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
-export function RegionalRisk() {
-  const [regions, setRegions] = useState<any[]>([
-    { name: 'War & Conflict', desc: 'Active kinetic operations & troop movements', risk: 'Critical', color: 'radar-red', unrest: 9.4, food: 'Level 4', idp: '2.1M', active: '12 Active Zones', progress: 92 },
-    { name: 'Natural Disaster', desc: 'Drought, flooding & environmental hazards', risk: 'High Risk', color: 'radar-orange', unrest: 7.8, food: 'Level 5', idp: '840K', active: '6 Active Zones', progress: 72 },
-    { name: 'Political Stability', desc: 'Civil unrest, policy shifts & social tension', risk: 'Elevated', color: 'radar-orange', unrest: 8.1, food: 'Critical', idp: '1.2M', active: '15 Incident Areas', progress: 65 },
-    { name: 'Inflation & Economy', desc: 'ETB Volatility & macro-economic stress', risk: 'Severe', color: 'radar-red', unrest: 8.8, food: '34.2%', idp: 'Market Vol', active: 'National Coverage', progress: 85 },
-    { name: 'Oil & Fuel Energy', desc: 'Resource scarcity & supply chain integrity', risk: 'Elevated', color: 'radar-orange', unrest: 4.2, food: 'Low', idp: 'Rationing', active: '2 Minor Hotspots', progress: 35 },
-  ]);
+const ETHIOPIA_THEMATIC_ARTICLES = [
+  {
+    id: 'conflict-dynamics',
+    title: "Conflict Dynamics Across Ethiopia's Northern Corridor",
+    source: 'Multi-source field reporting',
+    summary:
+      'Synthesised overview of current kinetic activity, ceasefire stability, and cross-border spillover risks impacting northern Ethiopia.',
+    url: 'https://example.org/ethiopia/conflict-dynamics',
+  },
+  {
+    id: 'political-stability',
+    title: 'Political Stability & Governance Signal Pack',
+    source: 'Parliament, party communiqués, and civil-society reporting',
+    summary:
+      'Curated brief on institutional resilience, protest activity, and elite bargaining trends shaping Ethiopia’s medium-term political trajectory.',
+    url: 'https://example.org/ethiopia/political-stability',
+  },
+  {
+    id: 'macroeconomic-stress',
+    title: 'Macro-Economic Stress & FX Pressure',
+    source: 'IMF, World Bank, commercial research',
+    summary:
+      'Digest of inflation, FX liquidity, and sovereign risk signals relevant to importers, lenders, and portfolio exposure.',
+    url: 'https://example.org/ethiopia/macroeconomic-stress',
+  },
+];
+
+interface RegionalRiskProps {
+  onSelectEvent?: (event: any) => void;
+}
+
+export function RegionalRisk({ onSelectEvent }: RegionalRiskProps) {
+  const [regions, setRegions] = useState<any[]>([]);
+  const [activeArticle, setActiveArticle] = useState<any | null>(null);
+  const [ethiopiaEvents, setEthiopiaEvents] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchLiveStats = async () => {
       // Fetch pulse indicators
       const [indicatorsRes, eventsRes] = await Promise.all([
         supabase.from('indicators').select('*'),
-        supabase.from('events').select('source, type, location').ilike('location', '%Ethiopia%')
+        supabase.from('events').select('*').ilike('location', '%Ethiopia%')
       ]);
-      
-      if (indicatorsRes.data) {
-        const sentimentMatch = indicatorsRes.data.find(i => i.name === 'Social Sentiment Pulse');
-        
-        const updatedRegions = regions.map(r => {
-          // If the region is War & Conflict, count active reports
-          if (r.name === 'War & Conflict' && eventsRes.data) {
-            const kineticCount = eventsRes.data.filter(e => 
-              e.source === 'ACLED' || 
-              e.source.includes('Al Jazeera') || 
-              e.source.includes('BBC') ||
-              e.source.includes('Ethiopia Observer')
-            ).length;
-            return { ...r, active: `${kineticCount} Intelligence Reports`, unrest: kineticCount > 2 ? '9.8' : r.unrest, progress: Math.min(100, 70 + kineticCount * 5) };
-          }
-          
-          // If the region is Political Stability, use the sentiment pulse
-          if (r.name === 'Political Stability' && sentimentMatch) {
-            return { ...r, unrest: sentimentMatch.value, desc: `Regional Vibe Index: ${sentimentMatch.value > 0 ? 'Positive' : 'Tense'}` };
-          }
 
-          const match = indicatorsRes.data.find(ind => ind.name.includes(r.name));
-          if (match) {
-            return { ...r, unrest: match.value };
-          }
-          return r;
-        });
-        setRegions(updatedRegions);
+      const indicators = indicatorsRes.data ?? [];
+      const events = eventsRes.data ?? [];
+
+      if (events.length) {
+        // Keep a small, recent Ethiopia-focused slice for the news layout
+        const sorted = [...events].sort(
+          (a, b) => new Date(b.created_at ?? '').getTime() - new Date(a.created_at ?? '').getTime(),
+        );
+        setEthiopiaEvents(sorted.slice(0, 40));
       }
+
+      // Build dynamic regional cards — no hard-coded numbers
+      const kineticEvents = events.filter(e =>
+        e.source === 'ACLED' ||
+        (e.source || '').includes('Al Jazeera') ||
+        (e.source || '').includes('BBC') ||
+        (e.source || '').includes('Ethiopia Observer'),
+      );
+
+      const disasterEvents = events.filter(e =>
+        /flood|drought|disaster/i.test(e.type ?? '') ||
+        /GDACS|ReliefWeb/i.test(e.source ?? ''),
+      );
+
+      const sentimentMatch = indicators.find(i => i.name === 'Social Sentiment Pulse');
+      const inflationIndicator = indicators.find(i =>
+        /inflation|cpi/i.test(i.name ?? ''),
+      );
+      const fuelIndicator = indicators.find(i =>
+        /fuel|diesel/i.test(i.name ?? ''),
+      );
+
+      const warCount = kineticEvents.length;
+      const disasterCount = disasterEvents.length;
+      const sentiment = typeof sentimentMatch?.value === 'number' ? sentimentMatch.value : null;
+      const inflation = typeof inflationIndicator?.value === 'number' ? inflationIndicator.value : null;
+      const fuelStress = typeof fuelIndicator?.value === 'number' ? fuelIndicator.value : null;
+
+      const riskFromCount = (count: number) => {
+        if (count > 20) return 'Critical';
+        if (count > 10) return 'High Risk';
+        if (count > 3) return 'Elevated';
+        if (count > 0) return 'Watch';
+        return 'Stable';
+      };
+
+      const politicalRisk = (() => {
+        if (sentiment == null) return 'Live Feed';
+        if (sentiment <= -3) return 'Critical';
+        if (sentiment < 0) return 'Elevated';
+        if (sentiment > 2) return 'Improving';
+        return 'Watch';
+      })();
+
+      const inflationRisk = (() => {
+        if (inflation == null) return 'Live Feed';
+        if (inflation >= 30) return 'Severe';
+        if (inflation >= 15) return 'High Risk';
+        if (inflation >= 5) return 'Elevated';
+        return 'Stable';
+      })();
+
+      const fuelRisk = (() => {
+        if (fuelStress == null) return 'Live Feed';
+        if (fuelStress >= 80) return 'Critical';
+        if (fuelStress >= 50) return 'Elevated';
+        return 'Watch';
+      })();
+
+      const nextRegions = [
+        {
+          name: 'War & Conflict',
+          desc: 'Active kinetic operations & troop movements',
+          risk: riskFromCount(warCount),
+          color: 'radar-red',
+          unrest: warCount ? warCount.toString() : '—',
+          food: riskFromCount(warCount) === 'Critical' ? 'Level 4' : riskFromCount(warCount) === 'High Risk' ? 'Level 3' : 'Level 2',
+          idp: warCount ? `${warCount.toLocaleString()} signals` : 'Live feed',
+          active: warCount ? `${warCount} Intelligence Reports` : 'No recent reports',
+          progress: Math.min(100, 40 + warCount * 3),
+        },
+        {
+          name: 'Natural Disaster',
+          desc: 'Drought, flooding & environmental hazards',
+          risk: riskFromCount(disasterCount),
+          color: 'radar-orange',
+          unrest: disasterCount ? disasterCount.toString() : '—',
+          food: riskFromCount(disasterCount),
+          idp: disasterCount ? `${disasterCount.toLocaleString()} hazard events` : 'Live feed',
+          active: disasterCount ? `${disasterCount} Active Zones` : 'No active zones',
+          progress: Math.min(100, 30 + disasterCount * 4),
+        },
+        {
+          name: 'Political Stability',
+          desc:
+            sentiment != null
+              ? `Regional Vibe Index: ${sentiment > 0 ? 'Positive' : 'Tense'}`
+              : 'Civil unrest, policy shifts & social tension',
+          risk: politicalRisk,
+          color: 'radar-orange',
+          unrest: sentiment != null ? sentiment.toFixed(1) : '—',
+          food: sentiment != null ? (sentiment > 0 ? 'Positive' : 'Tense') : 'Live feed',
+          idp: 'Sentiment Index',
+          active: warCount ? `${warCount} Linked Incidents` : 'No linked incidents',
+          progress: Math.min(100, 50 + (sentiment != null ? Math.abs(sentiment) * 5 : 10)),
+        },
+        {
+          name: 'Inflation & Economy',
+          desc: 'ETB volatility & macro-economic stress',
+          risk: inflationRisk,
+          color: 'radar-red',
+          unrest: inflation != null ? inflation.toFixed(1) : '—',
+          food: inflation != null ? `${inflation.toFixed(1)}%` : 'Live feed',
+          idp: 'Market Conditions',
+          active: 'National Coverage',
+          progress: Math.min(100, 40 + (inflation != null ? inflation : 10)),
+        },
+        {
+          name: 'Oil & Fuel Energy',
+          desc: 'Resource scarcity & supply chain integrity',
+          risk: fuelRisk,
+          color: 'radar-orange',
+          unrest: fuelStress != null ? fuelStress.toFixed(1) : '—',
+          food: fuelStress != null ? 'Inventory' : 'Live feed',
+          idp: fuelStress != null ? `${fuelStress.toFixed(0)}% Stress` : 'Rationing risk',
+          active: fuelStress != null ? 'Critical corridors' : 'Monitoring',
+          progress: Math.min(100, 30 + (fuelStress != null ? fuelStress : 15)),
+        },
+      ];
+
+      setRegions(nextRegions);
     };
 
     fetchLiveStats();
@@ -54,8 +184,21 @@ export function RegionalRisk() {
     return () => clearInterval(interval);
   }, []);
 
+  const formatRelativeTime = (iso?: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const diffMs = Date.now() - d.getTime();
+    const diffMin = Math.round(diffMs / 60000);
+    if (diffMin < 1) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffH = Math.round(diffMin / 60);
+    if (diffH < 24) return `${diffH}h ago`;
+    const diffD = Math.round(diffH / 24);
+    return `${diffD}d ago`;
+  };
+
   return (
-    <section className="p-6 space-y-8 no-scrollbar">
+    <section id="ethiopia-intel" className="p-6 space-y-8 no-scrollbar">
       <div className="flex items-center justify-between border-b border-radar-border pb-4">
         <h3 className="text-xl font-black uppercase tracking-tighter text-white">Ethiopia Thematic Intelligence</h3>
         <div className="flex gap-4 items-center">
@@ -63,24 +206,151 @@ export function RegionalRisk() {
           <button className="text-radar-red text-[10px] font-bold uppercase tracking-widest hover:underline">Full Dataset</button>
         </div>
       </div>
-      
-      {/* Rest of the component remains similar but uses the dynamic 'regions' state */}
-      <div className="bg-radar-panel border border-radar-border rounded p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="font-bold text-sm uppercase tracking-widest text-white">National Incident Trend</h3>
-            <p className="text-[10px] text-gray-500 uppercase tracking-tighter">Cumulative violent events (30 Days)</p>
+
+      {/* Thematic reading deck modal */}
+      {activeArticle && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-radar-panel border border-radar-border rounded-lg max-w-lg w-full mx-4 p-6 relative">
+            <button
+              onClick={() => setActiveArticle(null)}
+              className="absolute top-3 right-3 text-[10px] font-mono text-gray-400 hover:text-white uppercase tracking-widest"
+            >
+              Close
+            </button>
+            <p className="text-[10px] text-gray-500 font-mono uppercase tracking-[0.2em] mb-2">
+              Ethiopia Reading Brief
+            </p>
+            <h4 className="text-lg font-black text-white mb-2">{activeArticle.title}</h4>
+            <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-3">
+              Curated from: {activeArticle.source}
+            </p>
+            <p className="text-sm text-gray-300 mb-4">
+              {activeArticle.summary}
+            </p>
+            <a
+              href={activeArticle.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-radar-red hover:underline"
+            >
+              Open full article / source
+              <span className="text-xs">↗</span>
+            </a>
           </div>
         </div>
-        <div className="h-32 w-full flex items-end gap-1 relative overflow-hidden">
-          <div className="absolute inset-0 flex items-end opacity-20 pointer-events-none">
-            <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 100">
-              <path d="M0,80 Q50,60 100,70 T200,40 T300,50 T400,20 T500,45 T600,15 T700,30 T800,10 T900,25 T1000,5" fill="none" stroke="#e11d48" strokeWidth="4"></path>
-            </svg>
+      )}
+
+      {/* Thematic reading deck + NYT-style Ethiopia layout */}
+      <div className="bg-radar-panel border border-radar-border rounded p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[9px] text-gray-500 font-mono uppercase tracking-[0.24em]">
+              Ethiopia Thematic Reading Deck
+            </p>
+            <p className="text-[10px] text-gray-400">
+              Curated long-reads to frame the day&apos;s risk picture.
+            </p>
           </div>
-          {[30, 45, 35, 60, 50, 75, 65, 90, 80, 100].map((h, i) => (
-            <div key={i} className={`flex-1 bg-radar-red/${i < 5 ? '10' : i < 7 ? '20' : i < 9 ? '40' : ''}`} style={{ height: `${h}%` }}></div>
+        </div>
+
+        {/* Top row: featured briefs (paper-style headlines) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-radar-border pt-4">
+          {ETHIOPIA_THEMATIC_ARTICLES.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              onClick={() => setActiveArticle(a)}
+              className="text-left group"
+            >
+              <h4 className="text-[13px] font-semibold text-white group-hover:text-radar-red leading-snug">
+                {a.title}
+              </h4>
+              <p className="mt-1 text-[10px] text-gray-500 uppercase tracking-widest">
+                {a.source}
+              </p>
+              <p className="mt-2 text-[11px] text-gray-400 line-clamp-3">
+                {a.summary}
+              </p>
+            </button>
           ))}
+        </div>
+
+        {/* Bottom row: Ethiopia news layout — categorised, recency-biased */}
+        <div className="mt-4 border-t border-radar-border pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            {
+              id: 'conflict',
+              title: 'Conflict & Security',
+              filter: (e: any) =>
+                /conflict|kinetic|clash|battle|attack|militia|troop/i.test(e.type ?? '') ||
+                /ACLED|OpenSky/i.test(e.source ?? ''),
+            },
+            {
+              id: 'political',
+              title: 'Political & Governance',
+              filter: (e: any) =>
+                /politic|election|governance|protest|demonstration/i.test(e.type ?? '') ||
+                /parliament|party/i.test(e.description ?? ''),
+            },
+            {
+              id: 'humanitarian',
+              title: 'Humanitarian & Disaster',
+              filter: (e: any) =>
+                /flood|drought|disaster|idp|displacement|aid/i.test(e.type ?? '') ||
+                /GDACS|ReliefWeb/i.test(e.source ?? ''),
+            },
+            {
+              id: 'economic',
+              title: 'Economic & Markets',
+              filter: (e: any) =>
+                /inflation|fx|currency|commodity|trade|market/i.test(e.type ?? '') ||
+                /World Bank|IMF/i.test(e.source ?? ''),
+            },
+          ].map((bucket) => {
+            const items = ethiopiaEvents.filter(bucket.filter).slice(0, 4);
+            return (
+              <div key={bucket.id} className="space-y-2">
+                <h4 className="text-[10px] font-mono uppercase tracking-[0.18em] text-gray-400 border-b border-radar-border pb-1">
+                  {bucket.title}
+                </h4>
+                {items.length === 0 && (
+                  <p className="text-[10px] text-gray-600 italic">No fresh Ethiopia items in this band.</p>
+                )}
+                <ul className="space-y-1.5">
+                  {items.map((e, idx) => (
+                    <li
+                      key={`${bucket.id}-${idx}`}
+                      className="text-[11px] text-gray-300 leading-snug cursor-pointer hover:text-white"
+                      onClick={() => onSelectEvent?.(e)}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold">
+                          {e.location || 'Ethiopia'}
+                        </span>
+                        <span className="text-[9px] text-gray-500 font-mono">
+                          {formatRelativeTime(e.created_at)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-500">
+                          {e.type || e.source}
+                        </span>
+                        <span className="text-[8px] uppercase tracking-widest text-radar-red ml-auto">
+                          {bucket.id === 'conflict'
+                            ? 'High Risk'
+                            : bucket.id === 'political'
+                            ? 'Governance'
+                            : bucket.id === 'humanitarian'
+                            ? 'Humanitarian'
+                            : 'Macro'}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       </div>
 

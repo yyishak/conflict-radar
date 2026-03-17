@@ -7,6 +7,8 @@ import { CATEGORY_CONFIG, type EventCategory } from '@/lib/categories';
 interface GlobeMapProps {
   events: any[];
   onEventClick: (event: any) => void;
+  view: 'ethiopia' | 'horn' | 'global';
+  liteMode?: boolean;
 }
 
 // ─── Static data — defined at module level so they're never recreated ──────────
@@ -79,14 +81,14 @@ function ringMaxRadius(d: any) {
 }
 function pointColor(d: any) { return d._c; }
 
-// Ring colour: use pre-parsed RGB stored on the data object — no hex work per frame
-function ringColor(d: any) {
-  return (t: number) => `rgba(${d._r},${d._g},${d._b},${Math.max(0, 1 - t)})`;
+// Ring colour: seismic-style indicator (fixed red, fading outwards)
+function ringColor(_d: any) {
+  return (t: number) => `rgba(239,68,68,${Math.max(0, 1 - t)})`; // tailwind red-500
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function GlobeMap({ events, onEventClick }: GlobeMapProps) {
+export default function GlobeMap({ events, onEventClick, view, liteMode = false }: GlobeMapProps) {
   const globeRef   = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dims, setDims]       = useState({ w: 800, h: 500 });
@@ -118,6 +120,8 @@ export default function GlobeMap({ events, onEventClick }: GlobeMapProps) {
       .catch(() => {});
   }, []);
 
+  const [motionFactor, setMotionFactor] = useState(1);
+
   // ── Globe ready handler ───────────────────────────────────────────────────
   const onGlobeReady = useCallback(() => {
     const g = globeRef.current;
@@ -136,15 +140,38 @@ export default function GlobeMap({ events, onEventClick }: GlobeMapProps) {
     ctrl.enableRotate  = true;
     ctrl.enablePan     = false;
     ctrl.enableZoom    = true;
-    ctrl.minDistance   = 120;
-    ctrl.maxDistance   = 600;
+    // Allow closer inspection of Ethiopia and surrounding region
+    ctrl.minDistance   = 60;
+    ctrl.maxDistance   = 500;
     ctrl.zoomSpeed     = 0.6;
     ctrl.rotateSpeed   = 0.5;
     ctrl.enableDamping = true;
     ctrl.dampingFactor = 0.12;
 
+    // Respect prefers-reduced-motion
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setMotionFactor(0.5);
+    } else {
+      setMotionFactor(1);
+    }
+
     setReady(true);
   }, []);
+
+  // Camera presets based on view prop
+  useEffect(() => {
+    if (!ready) return;
+    const g = globeRef.current;
+    if (!g) return;
+
+    if (view === 'ethiopia') {
+      g.pointOfView({ lat: 9.145, lng: 40.489, altitude: 1.6 }, 1000);
+    } else if (view === 'horn') {
+      g.pointOfView({ lat: 10, lng: 42, altitude: 2.0 }, 1000);
+    } else {
+      g.pointOfView({ lat: 20, lng: 15, altitude: 3.0 }, 1000);
+    }
+  }, [view, ready]);
 
   // ── Enrich events: inject precomputed RGB + colour string ─────────────────
   // Only runs when `events` reference changes (controlled by parent useMemo)
@@ -162,6 +189,19 @@ export default function GlobeMap({ events, onEventClick }: GlobeMapProps) {
     [events],
   );
 
+  // Build multi-ring indicator per event (seismic-style concentric discs)
+  const ringLayers = useMemo(
+    () =>
+      enriched.flatMap(ev =>
+        [0.4, 0.7, 1].map((scale, idx) => ({
+          ...ev,
+          _ringLayer: idx,
+          _ringScale: scale,
+        })),
+      ),
+    [enriched],
+  );
+
   // ── Stable polygon features array ─────────────────────────────────────────
   const polyFeatures = useMemo(() => countries.features, [countries.features]);
 
@@ -172,22 +212,22 @@ export default function GlobeMap({ events, onEventClick }: GlobeMapProps) {
   );
 
   return (
-    <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-[#020407]">
+    <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-[#020407] z-[1]">
       <Globe
         ref={globeRef}
         width={dims.w}
         height={dims.h}
         onGlobeReady={onGlobeReady}
 
-        // Textures
-        globeImageUrl="https://unpkg.com/three-globe/example/img/earth-night.jpg"
-        bumpImageUrl="https://unpkg.com/three-globe/example/img/earth-topology.png"
-        backgroundImageUrl="https://unpkg.com/three-globe/example/img/night-sky.png"
+        // Textures served locally from /public — never depend on external CDN
+        globeImageUrl={liteMode ? '/earth-dark.jpg' : '/earth-night.jpg'}
+        bumpImageUrl={undefined}
+        backgroundImageUrl={undefined}
 
         // Atmosphere
-        showAtmosphere
+        showAtmosphere={!liteMode}
         atmosphereColor="#c0142a"
-        atmosphereAltitude={0.14}
+        atmosphereAltitude={0.08}
 
         // Country polygons
         polygonsData={polyFeatures}
@@ -198,23 +238,22 @@ export default function GlobeMap({ events, onEventClick }: GlobeMapProps) {
         polygonsTransitionDuration={0}
 
         // Event pulse rings
-        ringsData={enriched}
+        ringsData={ringLayers}
         ringLat="latitude"
         ringLng="longitude"
         ringColor={ringColor}
-        ringMaxRadius={ringMaxRadius}
-        ringPropagationSpeed={RING_PROPAGATION}
+        ringMaxRadius={(d: any) => ringMaxRadius(d) * (d._ringScale ?? 1)}
+        ringPropagationSpeed={RING_PROPAGATION * motionFactor * (liteMode ? 0.8 : 1)}
         ringRepeatPeriod={RING_PERIOD}
         ringAltitude={RING_ALT}
 
-        // Event core points — merged into one mesh for GPU efficiency
-        // pointsMerge disabled to keep individual click detection
+        // Core dot at centre of every ring indicator
         pointsData={enriched}
         pointLat="latitude"
         pointLng="longitude"
         pointColor={pointColor}
-        pointRadius={POINT_RADIUS}
         pointAltitude={POINT_ALTITUDE}
+        pointRadius={POINT_RADIUS}
         pointsMerge={false}
         onPointClick={handlePointClick}
 
@@ -230,6 +269,11 @@ export default function GlobeMap({ events, onEventClick }: GlobeMapProps) {
         labelAltitude={0.003}
         labelResolution={2}
       />
+
+      {/* Flight radar attribution */}
+      <div className="absolute bottom-1 left-4 text-[8px] text-gray-600 font-mono uppercase tracking-[0.2em] pointer-events-none">
+        Flight radar layer powered by OpenSky Network &amp; AirLabs
+      </div>
 
       {/* Legend */}
       <div className="absolute bottom-4 left-4 flex flex-col gap-1.5 bg-black/75 border border-radar-border rounded px-3 py-2.5 backdrop-blur-sm pointer-events-none">

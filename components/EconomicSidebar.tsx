@@ -52,7 +52,11 @@ function CommodityRow({ quote }: { quote: Quote }) {
   );
 }
 
-export function EconomicSidebar() {
+interface EconomicSidebarProps {
+  layout?: 'sidebar' | 'mobile';
+}
+
+export function EconomicSidebar({ layout = 'sidebar' }: EconomicSidebarProps) {
   const [indicators, setIndicators] = useState<any[]>([]);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [commodities, setCommodities] = useState<CommodityData | null>(null);
@@ -98,15 +102,22 @@ export function EconomicSidebar() {
     return found ? found.value : fallback;
   };
 
-  const officialRate = getVal('ETB_USD_OFFICIAL', '118.42');
-  const blackMarketRate = getVal('ETB_USD_BLACK_MARKET', '148.50');
+  const officialRateRaw = getVal('ETB_USD_OFFICIAL', '118.42');
+  const blackMarketRateRaw = getVal('ETB_USD_BLACK_MARKET', '148.50');
+  const officialRate = Number(officialRateRaw);
+  const blackMarketRate = Number(blackMarketRateRaw);
 
   // Split quotes: oil (CL=F, BZ=F, NG=F) vs gold (GC=F)
   const oilQuotes = commodities?.quotes.filter(q => q.symbol !== 'GC=F') ?? [];
   const goldQuote = commodities?.quotes.find(q => q.symbol === 'GC=F');
 
+  const rootClasses =
+    layout === 'sidebar'
+      ? 'w-80 border-l border-radar-border bg-radar-dark flex flex-col z-20 shrink-0 overflow-hidden'
+      : 'w-full border-t border-radar-border bg-radar-dark flex flex-col z-20 shrink-0 overflow-hidden';
+
   return (
-    <aside className="w-80 border-l border-radar-border bg-radar-dark flex flex-col z-20 shrink-0 overflow-hidden">
+    <aside className={rootClasses}>
       <div className="p-4 border-b border-radar-border flex justify-between items-center bg-radar-panel/50">
         <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Economic Intel</h2>
         <span className="text-[9px] text-radar-red animate-pulse uppercase font-mono">Live Stream</span>
@@ -181,12 +192,16 @@ export function EconomicSidebar() {
             <div className="bg-radar-panel/30 border border-radar-border p-3 flex justify-between items-end">
               <div>
                 <p className="text-[8px] text-gray-500 uppercase font-bold">Official Rate</p>
-                <p className="text-xl font-black text-white">{officialRate}</p>
+                <p className="text-xl font-black text-white">
+                  {Number.isFinite(officialRate) ? officialRate.toFixed(2) : officialRateRaw}
+                </p>
                 <p className="text-[8px] text-gray-600 font-mono">ETB / USD</p>
               </div>
               <div className="text-right">
                 <p className="text-[8px] text-gray-500 uppercase font-bold">Parallel</p>
-                <p className="text-xl font-black text-radar-red">{blackMarketRate}</p>
+                <p className="text-xl font-black text-radar-red">
+                  {Number.isFinite(blackMarketRate) ? blackMarketRate.toFixed(2) : blackMarketRateRaw}
+                </p>
                 <p className="text-[8px] text-gray-600 font-mono">Black market</p>
               </div>
             </div>
@@ -199,7 +214,10 @@ export function EconomicSidebar() {
                     <div className="w-full h-1/2 bg-gradient-to-t from-radar-red/20 to-transparent" />
                   </div>
                   <div className="absolute bottom-2 left-2 text-[8px] font-mono text-radar-red">
-                    SPREAD: +{(Number(blackMarketRate) - Number(officialRate)).toFixed(2)} ETB
+                    SPREAD:{' '}
+                    {Number.isFinite(officialRate) && Number.isFinite(blackMarketRate)
+                      ? `+${(blackMarketRate - officialRate).toFixed(2)} ETB`
+                      : 'N/A'}
                   </div>
                 </div>
               </div>

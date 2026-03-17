@@ -1,43 +1,68 @@
 @import "tailwindcss";
 
+/* ── Dark mode (default) ────────────────────────────────────────────────── */
 :root {
   --background: #0a0a0a;
   --foreground: #e5e7eb;
-  
-  --radar-dark: #0a0a0a;
-  --radar-panel: #121212;
+
+  --radar-dark:   #0a0a0a;
+  --radar-panel:  #121212;
   --radar-border: #1f1f1f;
-  --radar-red: #e11d48;
+  --radar-red:    #e11d48;
   --radar-orange: #f59e0b;
-  --radar-cyan: #06b6d4;
-  --radar-teal: #14b8a6;
+  --radar-cyan:   #06b6d4;
+  --radar-teal:   #14b8a6;
   --radar-accent: #e11d48;
-  
-  --accent-red: #ef4444;
+
+  --accent-red:    #ef4444;
   --accent-orange: #f59e0b;
   --accent-yellow: #eab308;
-  --accent-green: #22c55e;
-  --accent-cyan: #06b6d4;
+  --accent-green:  #22c55e;
+  --accent-cyan:   #06b6d4;
+
+  /* Light mode text colours – CSS vars so components can reference them */
+  --text-primary:   #e5e7eb;
+  --text-secondary: #9ca3af;
+  --text-muted:     #6b7280;
+}
+
+/* ── Light mode ─────────────────────────────────────────────────────────── */
+.theme-light {
+  --background: #f1f5f9;
+  --foreground: #0f172a;
+
+  --radar-dark:   #f1f5f9;
+  --radar-panel:  #ffffff;
+  --radar-border: #cbd5e1;
+  --radar-red:    #dc2626;
+  --radar-orange: #ea580c;
+  --radar-cyan:   #0891b2;
+  --radar-teal:   #0f766e;
+  --radar-accent: #dc2626;
+
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  
-  --color-radar-dark: var(--radar-dark);
-  --color-radar-panel: var(--radar-panel);
+  --color-background:   var(--background);
+  --color-foreground:   var(--foreground);
+
+  --color-radar-dark:   var(--radar-dark);
+  --color-radar-panel:  var(--radar-panel);
   --color-radar-border: var(--radar-border);
-  --color-radar-red: var(--radar-red);
+  --color-radar-red:    var(--radar-red);
   --color-radar-orange: var(--radar-orange);
-  --color-radar-cyan: var(--radar-cyan);
-  --color-radar-teal: var(--radar-teal);
+  --color-radar-cyan:   var(--radar-cyan);
+  --color-radar-teal:   var(--radar-teal);
   --color-radar-accent: var(--radar-accent);
-  
-  --color-accent-red: var(--accent-red);
+
+  --color-accent-red:    var(--accent-red);
   --color-accent-orange: var(--accent-orange);
   --color-accent-yellow: var(--accent-yellow);
-  --color-accent-green: var(--accent-green);
-  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-green:  var(--accent-green);
+  --color-accent-cyan:   var(--accent-cyan);
 }
 
 body {
@@ -47,11 +72,57 @@ body {
   height: 100vh;
 }
 
+/* ── Light mode: global text / surface overrides ────────────────────────── */
+
+/* Flip hardcoded gray text classes in light mode */
+.theme-light .text-gray-300,
+.theme-light .text-gray-200,
+.theme-light .text-gray-100 { color: #334155; }
+
+.theme-light .text-gray-400 { color: #475569; }
+.theme-light .text-gray-500 { color: #64748b; }
+.theme-light .text-gray-600 { color: #475569; }
+.theme-light .text-gray-700 { color: #374151; }
+.theme-light .text-white    { color: #0f172a; }
+
+/* Panels that use bg-radar-panel already switch via CSS var.
+   The globe canvas uses a hardcoded #020407 class — leave it dark. */
+
+/* Header / nav */
+.theme-light header {
+  background-color: rgba(241, 245, 249, 0.97);
+  border-bottom-color: #cbd5e1;
+}
+
+/* Footer (SmartDigest) */
+.theme-light footer {
+  background-color: rgba(255, 255, 255, 0.97);
+  border-top-color: #cbd5e1;
+}
+
+/* Map overlay pills (View / Lite Mode controls) */
+.theme-light .map-control-pill {
+  background-color: rgba(241, 245, 249, 0.92);
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+/* Scrollbar */
+.theme-light ::-webkit-scrollbar-track { background: #e2e8f0; }
+.theme-light ::-webkit-scrollbar-thumb { background: #94a3b8; }
+.theme-light ::-webkit-scrollbar-thumb:hover { background: #dc2626; }
+
+/* ── Scanline ───────────────────────────────────────────────────────────── */
 .scanline {
   width: 100%;
   height: 100px;
   z-index: 5;
-  background: linear-gradient(0deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.02) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
   opacity: 0.1;
   position: absolute;
   bottom: 100%;
@@ -60,10 +131,11 @@ body {
 }
 
 @keyframes scanline {
-  0% { bottom: 100%; }
+  0%   { bottom: 100%; }
   100% { bottom: -100px; }
 }
 
+/* ── Hotspot ──────────────────────────────────────────────────────────────*/
 .hotspot {
   position: absolute;
   width: 12px;
@@ -71,33 +143,33 @@ body {
   background-color: #ef4444;
   border-radius: 50%;
   box-shadow: 0 0 15px #ef4444, 0 0 30px #ef4444;
-  animation: pulse 2s infinite;
+  animation: hotspot-pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.5); opacity: 0.5; }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes hotspot-pulse {
+  0%   { transform: scale(1);   opacity: 1;   }
+  50%  { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1);   opacity: 1;   }
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-track {
-  background: #0a0a0a;
-}
-::-webkit-scrollbar-thumb {
-  background: #333;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #e11d48;
-}
+/* ── Scrollbar (dark default) ───────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 4px; }
+::-webkit-scrollbar-track  { background: #0a0a0a; }
+::-webkit-scrollbar-thumb  { background: #333; }
+::-webkit-scrollbar-thumb:hover { background: #e11d48; }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* ── Initial loading bar ────────────────────────────────────────────────── */
+@keyframes loader-bar {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+.animate-loader-bar {
+  animation: loader-bar 1.4s ease-in-out infinite;
 }

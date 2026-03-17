@@ -16,7 +16,7 @@ export function FilterBar({ activeFilters, onToggle, onSetAll, counts }: FilterB
   const totalActive = ALL_CATEGORIES.reduce((sum, c) => sum + (counts[c] ?? 0), 0);
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2.5 bg-black/80 border-b border-radar-border backdrop-blur-sm overflow-x-auto no-scrollbar shrink-0">
+    <div className="flex items-center gap-2 px-4 py-2.5 border-b border-radar-border backdrop-blur-sm overflow-x-auto no-scrollbar shrink-0" style={{ background: 'var(--radar-panel)' }}>
       {/* Label */}
       <div className="flex items-center gap-2 shrink-0 mr-1">
         <span className="w-1.5 h-1.5 rounded-full bg-radar-red animate-pulse" />
@@ -30,9 +30,10 @@ export function FilterBar({ activeFilters, onToggle, onSetAll, counts }: FilterB
         onClick={() => onSetAll(allActive ? [] : ALL_CATEGORIES)}
         className="shrink-0 px-2.5 py-1 text-[9px] font-mono uppercase tracking-widest border transition-all duration-200"
         style={{
-          borderColor: allActive ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.12)',
-          background: allActive ? 'rgba(255,255,255,0.08)' : 'transparent',
-          color: allActive ? 'white' : 'rgba(255,255,255,0.35)',
+          borderColor: allActive ? 'var(--radar-border)' : 'var(--radar-border)',
+          background: allActive ? 'var(--radar-red)' : 'transparent',
+          color: allActive ? 'white' : 'var(--foreground)',
+          opacity: allActive ? 1 : 0.5,
         }}
       >
         {allActive ? 'ALL ✓' : noneActive ? 'NONE' : 'ALL'}
@@ -53,9 +54,10 @@ export function FilterBar({ activeFilters, onToggle, onSetAll, counts }: FilterB
             title={cfg.desc}
             className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-wide transition-all duration-200 hover:scale-105 active:scale-95 select-none"
             style={{
-              border: `1px solid ${active ? cfg.color : 'rgba(255,255,255,0.1)'}`,
+              border: `1px solid ${active ? cfg.color : 'var(--radar-border)'}`,
               background: active ? cfg.bgColor : 'transparent',
-              color: active ? cfg.color : 'rgba(255,255,255,0.28)',
+              color: active ? cfg.color : 'var(--foreground)',
+              opacity: active ? 1 : 0.55,
               boxShadow: active ? `0 0 8px ${cfg.color}30` : 'none',
             }}
           >
@@ -70,8 +72,8 @@ export function FilterBar({ activeFilters, onToggle, onSetAll, counts }: FilterB
               <span
                 className="ml-0.5 px-1 py-0 rounded text-[8px] font-black leading-4 min-w-[14px] text-center"
                 style={{
-                  background: active ? cfg.color : 'rgba(255,255,255,0.1)',
-                  color: active ? 'white' : 'rgba(255,255,255,0.3)',
+                  background: active ? cfg.color : 'var(--radar-border)',
+                  color: active ? 'white' : 'var(--foreground)',
                 }}
               >
                 {count}

@@ -12,6 +12,8 @@ from backend.antigravity.fetcher.sources.indicators import fetch_indicators
 from backend.antigravity.fetcher.sources.currency   import fetch_currency_rates
 from backend.antigravity.fetcher.sources.scraper    import fetch_ground_truth
 from backend.antigravity.fetcher.sources.nyt        import fetch_nyt_world_conflict
+from backend.antigravity.fetcher.sources.opensky    import fetch_opensky_global_snapshot
+from backend.antigravity.fetcher.sources.airlabs    import fetch_airlabs_flights_snapshot
 from backend.antigravity.fetcher.sentiment          import process_latest_sentiment
 from backend.antigravity.fetcher.briefing           import generate_situational_briefing
 
@@ -34,6 +36,10 @@ def run_all_fetchers():
     fetch_nyt_world_conflict()
     fetch_gdelt_vibe()
     fetch_ground_truth()
+
+    # ── Air activity (flight radar layers: OpenSky + AirLabs) ─
+    fetch_opensky_global_snapshot()
+    fetch_airlabs_flights_snapshot()
 
     # ── AI sentiment + briefing ───────────────────────────────
     process_latest_sentiment()
