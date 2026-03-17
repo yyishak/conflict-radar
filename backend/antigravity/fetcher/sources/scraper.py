@@ -4,10 +4,30 @@ from backend.antigravity.fetcher.db import store_event
 from backend.antigravity.fetcher.processor import calculate_risk_level
 
 FEEDS = [
+    # Pan-African / global
     {"name": "Al Jazeera - Africa", "url": "https://www.aljazeera.com/xml/rss/all.xml"},
     {"name": "BBC - Africa", "url": "http://feeds.bbci.co.uk/news/world/africa/rss.xml"},
+    {"name": "Reuters - World", "url": "https://www.reutersagency.com/feed/?best-regions=africa&post_type=best"},
+    {"name": "Africanews - Africa", "url": "https://www.africanews.com/feed/rss"},
+
+    # Global conflict-heavy sections
+    {"name": "BBC - World", "url": "http://feeds.bbci.co.uk/news/world/rss.xml"},
+    {"name": "BBC - Middle East", "url": "http://feeds.bbci.co.uk/news/world/middle_east/rss.xml"},
+
+    # UN conflict / peace & security
+    {"name": "UN News - Peace & Security", "url": "https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml"},
+    {"name": "UN News - Africa", "url": "https://news.un.org/feed/subscribe/en/news/region/africa/feed/rss.xml"},
+
+    # Ethiopia-focused outlets
     {"name": "Ethiopia Observer", "url": "https://www.ethiopiaobserver.com/feed/"},
-    {"name": "Reuters - World", "url": "https://p.reuters.com/reuters/worldNews"}
+    {"name": "Addis Standard", "url": "https://addisstandard.com/feed/"},
+    {"name": "Ethiopia Insight", "url": "https://www.ethiopia-insight.com/feed/"},
+    {"name": "Addis Fortune", "url": "https://addisfortune.news/feed/"},
+    {"name": "Walta Info", "url": "https://www.waltainfo.com/feed/"},
+
+    # Regional conflict / crisis coverage
+    {"name": "ReliefWeb - Horn of Africa", "url": "https://reliefweb.int/updates/rss?primary_country=86"},  # 86 = Ethiopia
+    {"name": "ReliefWeb - Ethiopia All", "url": "https://reliefweb.int/updates/rss?search=Ethiopia"},
 ]
 
 def fetch_ground_truth():

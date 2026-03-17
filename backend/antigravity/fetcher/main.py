@@ -11,6 +11,7 @@ from backend.antigravity.fetcher.sources.gdelt      import fetch_gdelt_vibe     
 from backend.antigravity.fetcher.sources.indicators import fetch_indicators
 from backend.antigravity.fetcher.sources.currency   import fetch_currency_rates
 from backend.antigravity.fetcher.sources.scraper    import fetch_ground_truth
+from backend.antigravity.fetcher.sources.nyt        import fetch_nyt_world_conflict
 from backend.antigravity.fetcher.sentiment          import process_latest_sentiment
 from backend.antigravity.fetcher.briefing           import generate_situational_briefing
 
@@ -30,6 +31,7 @@ def run_all_fetchers():
 
     # ── News, scrapers & vibe ─────────────────────────────────
     fetch_ethiopia_news()
+    fetch_nyt_world_conflict()
     fetch_gdelt_vibe()
     fetch_ground_truth()
 
