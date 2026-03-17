@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { TopNav } from '@/components/TopNav';
 import { LiveAlertFeed } from '@/components/LiveAlertFeed';
 import { EconomicSidebar } from '@/components/EconomicSidebar';
+import { RegionalRisk } from '@/components/RegionalRisk';
 import { SmartDigest } from '@/components/SmartDigest';
 import { EventDetailModal } from '@/components/EventDetailModal';
 import { FilterBar } from '@/components/FilterBar';
@@ -96,11 +97,11 @@ export default function Home() {
         {/* Left: Diagnostic Feed */}
         <LiveAlertFeed events={filteredEvents} layout="sidebar" />
 
-        {/* Centre: Globe + controls */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-[#020407]">
+        {/* Centre: Globe + news — scrollable column */}
+        <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden bg-radar-dark no-scrollbar">
 
-          {/* Globe (takes all remaining vertical space) */}
-          <section className="flex-1 relative min-h-0">
+          {/* Globe — fixed height so news is reachable by scrolling */}
+          <section className="h-[480px] relative shrink-0 bg-[#020407]">
             <div className="scanline" />
             <GlobeMap
               events={globeEvents}
@@ -150,13 +151,16 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Filter bar — sits below the globe */}
+          {/* Filter bar */}
           <FilterBar
             activeFilters={activeFilters}
             onToggle={toggleFilter}
             onSetAll={setAllFilters}
             counts={categoryCounts}
           />
+
+          {/* Ethiopia Thematic Intelligence / news */}
+          <RegionalRisk onSelectEvent={setSelectedEvent} />
         </div>
 
         {/* Right: Economic indicators & rates */}
@@ -189,6 +193,9 @@ export default function Home() {
           onSetAll={setAllFilters}
           counts={categoryCounts}
         />
+
+        {/* Ethiopia Thematic Intelligence */}
+        <RegionalRisk onSelectEvent={setSelectedEvent} />
 
         {/* Diagnostic feed */}
         <LiveAlertFeed events={filteredEvents} layout="mobile" />
