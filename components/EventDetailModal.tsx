@@ -13,6 +13,7 @@ interface Event {
   text: string;
   source?: string;
   description?: string;
+  location?: string;
   created_at?: string;
 }
 
