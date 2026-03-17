@@ -1,33 +1,44 @@
-name: Conflict Radar Fetcher Pulse
+name: Conflict Radar — Data Fetcher Pulse
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Every 6 hours
-  workflow_dispatch: # Allows manual trigger
+    - cron: '0 */6 * * *'   # Every 6 hours: 00:00, 06:00, 12:00, 18:00 UTC
+  workflow_dispatch:          # Allow manual trigger from GitHub Actions tab
 
 jobs:
-  build:
+  fetch:
+    name: Run Data Aggregation Pulse
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r backend/requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
 
-    - name: Run Fetchers
-      env:
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        # Add other API keys here as GitHub Secrets
-      run: |
-        export PYTHONPATH=$PYTHONPATH:$(pwd)
-        python backend/antigravity/fetcher/main.py --single-run
+      - name: Run all fetchers (single-run mode)
+        env:
+          # ── Required ──────────────────────────────────────────────
+          SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+          # ── ACLED conflict data (register free at developer.acleddata.com) ──
+          ACLED_EMAIL: ${{ secrets.ACLED_EMAIL }}
+          ACLED_KEY:   ${{ secrets.ACLED_KEY }}
+
+          # ── NewsData.io headlines (register free at newsdata.io) ──
+          NEWSDATA_API_KEY: ${{ secrets.NEWSDATA_API_KEY }}
+
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          python backend/antigravity/fetcher/main.py --single-run

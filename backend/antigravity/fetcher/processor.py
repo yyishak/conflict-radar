@@ -1,5 +1,4 @@
 from datetime import datetime
-import pandas as pd
 
 def calculate_risk_level(category: str, detail_score: float = 0.0) -> int:
     """

@@ -1,54 +1,86 @@
 from backend.antigravity.fetcher.db import supabase, store_indicator
-import datetime
+
 
 def generate_situational_briefing():
     """
-    Aggregates latest events and indicators to generate a succinct 
-    situational briefing. Uses heuristic templates for now, 
-    designed to be replaced by Gemini API.
+    Aggregates latest events + indicators into a succinct situational briefing.
+    Heuristic engine — designed to be swapped for Gemini/GPT later.
     """
     print("Generating situational briefing...")
-    
-    # 1. Fetch latest events
-    events_res = supabase.table("events").select("*").order("created_at", { "ascending": False }).limit(5).execute()
-    events = events_res.data if events_res.data else []
-    
-    # 2. Fetch latest indicators
-    indicators_res = supabase.table("indicators").select("*").order("created_at", { "ascending": False }).limit(3).execute()
-    indicators = indicators_res.data if indicators_res.data else []
-    
-    if not events and not indicators:
-        return "Intelligence scanning in progress. No critical escalations detected in the current sector."
 
-    # 3. Build heuristic summary
+    # 1. Fetch latest events — Python supabase-py uses desc=True not {"ascending": False}
+    events_res = (
+        supabase.table("events")
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(5)
+        .execute()
+    )
+    events = events_res.data if events_res.data else []
+
+    # 2. Fetch latest indicators
+    indicators_res = (
+        supabase.table("indicators")
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(3)
+        .execute()
+    )
+    indicators = indicators_res.data if indicators_res.data else []
+
+    if not events and not indicators:
+        briefing = (
+            "Intelligence scanning in progress. "
+            "No critical escalations detected in the current sector."
+        )
+        _store(briefing)
+        return briefing
+
     summary_parts = []
-    
-    # War/Conflict focus
-    war_events = [e for e in events if e.get('source') in ['ACLED', 'Scraper']]
-    if war_events:
-        summary_parts.append(f"CONFLICT: {len(war_events)} incidents reported. Focus in {war_events[0].get('location')}.")
+
+    # Conflict focus
+    conflict_events = [
+        e for e in events
+        if e.get("source") in ("ACLED", "Scraper") or
+           "conflict" in (e.get("type") or "").lower()
+    ]
+    if conflict_events:
+        loc = conflict_events[0].get("location") or "the region"
+        summary_parts.append(
+            f"CONFLICT: {len(conflict_events)} incident(s) reported. Focus area: {loc}."
+        )
     else:
-        summary_parts.append("CONFLICT: Kinetic activity remains at baseline levels.")
-        
-    # Economic/Sentiment focus
-    sentiment = next((i for i in indicators if "Sentiment" in i.get('name', '')), None)
+        summary_parts.append("CONFLICT: Kinetic activity at baseline levels.")
+
+    # Sentiment / stability
+    sentiment = next(
+        (i for i in indicators if "Sentiment" in (i.get("name") or "")), None
+    )
     if sentiment:
-        vibe = "STABLE" if sentiment.get('value', 0) > 0 else "DEGRADING"
-        summary_parts.append(f"STABILITY: Regional pulse is {vibe} ({sentiment.get('value', 0)}).")
-        
-    # 4. Final Polish
+        val = sentiment.get("value", 0)
+        state = "STABLE" if val > 0 else "DEGRADING"
+        summary_parts.append(f"STABILITY: Regional pulse is {state} ({val:+.1f}).")
+
+    # Hazard focus
+    hazard_events = [e for e in events if e.get("source") == "GDACS"]
+    if hazard_events:
+        summary_parts.append(f"HAZARDS: {len(hazard_events)} active natural hazard alert(s).")
+
     full_briefing = " | ".join(summary_parts) + " [INTEL-CORE-V1]"
-    
-    # 5. Store as an indicator of type 'Briefing'
+
+    _store(full_briefing)
+    print(f"Briefing generated: {full_briefing}")
+    return full_briefing
+
+
+def _store(content: str):
     store_indicator({
         "name": "SITUATIONAL_BRIEFING",
-        "value": 1.0, # Meta value
+        "value": 1.0,
         "category": "Intelligence",
-        "metadata": {"content": full_briefing}
+        "metadata": {"content": content},
     })
-    
-    print(f"Briefing Generated: {full_briefing}")
-    return full_briefing
+
 
 if __name__ == "__main__":
     generate_situational_briefing()

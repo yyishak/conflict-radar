@@ -3,4 +3,3 @@ python-dotenv
 feedparser
 requests
 schedule
-pandas
