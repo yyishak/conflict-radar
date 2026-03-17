@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Page uses Supabase real-time — skip static pre-rendering
+  output: 'standalone',
 };
 
 export default nextConfig;
