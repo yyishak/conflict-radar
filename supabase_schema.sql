@@ -18,7 +18,6 @@ CREATE TABLE IF NOT EXISTS public.events (
     created_at  timestamp with time zone DEFAULT now()
 );
 
--- Index for fast time-ordered fetches (frontend uses ORDER BY created_at DESC)
 CREATE INDEX IF NOT EXISTS events_created_at_idx ON public.events (created_at DESC);
 CREATE INDEX IF NOT EXISTS events_location_idx   ON public.events USING gin (to_tsvector('english', coalesce(location, '')));
 
@@ -36,37 +35,38 @@ CREATE INDEX IF NOT EXISTS indicators_created_at_idx ON public.indicators (creat
 CREATE INDEX IF NOT EXISTS indicators_name_idx       ON public.indicators (name);
 
 -- ── 3. Row Level Security ────────────────────────────────────
--- Anon key  → read only (frontend)
--- Service key → full access (backend fetcher)
-
-ALTER TABLE public.events    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.events     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.indicators ENABLE ROW LEVEL SECURITY;
 
--- Allow anyone to read events (frontend uses anon key)
-CREATE POLICY IF NOT EXISTS "events_public_read"
+-- Drop policies first so re-running this script is safe
+DROP POLICY IF EXISTS "events_public_read"      ON public.events;
+DROP POLICY IF EXISTS "events_service_write"    ON public.events;
+DROP POLICY IF EXISTS "indicators_public_read"  ON public.indicators;
+DROP POLICY IF EXISTS "indicators_service_write" ON public.indicators;
+
+-- Allow anyone (anon key / frontend) to read events
+CREATE POLICY "events_public_read"
     ON public.events FOR SELECT
     USING (true);
 
--- Allow service role to insert/update/delete events
-CREATE POLICY IF NOT EXISTS "events_service_write"
+-- Allow service role (backend fetcher) to write events
+CREATE POLICY "events_service_write"
     ON public.events FOR ALL
     USING     (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
 
 -- Allow anyone to read indicators
-CREATE POLICY IF NOT EXISTS "indicators_public_read"
+CREATE POLICY "indicators_public_read"
     ON public.indicators FOR SELECT
     USING (true);
 
--- Allow service role to insert/update/delete indicators
-CREATE POLICY IF NOT EXISTS "indicators_service_write"
+-- Allow service role to write indicators
+CREATE POLICY "indicators_service_write"
     ON public.indicators FOR ALL
     USING     (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
 
--- ── 4. Realtime (live feed on frontend) ─────────────────────
+-- ── 4. Realtime ──────────────────────────────────────────────
 ALTER PUBLICATION supabase_realtime ADD TABLE public.events;
 
 -- ── Done ─────────────────────────────────────────────────────
--- After running this, restart the backend fetcher:
---   python -m backend.antigravity.fetcher.main --single-run
