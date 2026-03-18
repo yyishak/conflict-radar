@@ -12,30 +12,7 @@ interface GlobeMapProps {
   liteMode?: boolean;
 }
 
-// ─── Static data — defined at module level so they're never recreated ──────────
-
-const ETHIOPIA_CITIES = [
-  { name: 'Addis Ababa ★', lat: 9.03,  lng: 38.74, size: 0.7,  capital: true  },
-  { name: "Mek'ele",        lat: 13.50, lng: 39.48, size: 0.45, capital: false },
-  { name: 'Gondar',         lat: 12.61, lng: 37.46, size: 0.45, capital: false },
-  { name: 'Bahir Dar',      lat: 11.59, lng: 37.39, size: 0.45, capital: false },
-  { name: 'Dire Dawa',      lat: 9.59,  lng: 41.86, size: 0.45, capital: false },
-  { name: 'Hawassa',        lat: 7.06,  lng: 38.47, size: 0.45, capital: false },
-  { name: 'Adama',          lat: 8.54,  lng: 39.27, size: 0.35, capital: false },
-  { name: 'Jimma',          lat: 7.67,  lng: 36.83, size: 0.35, capital: false },
-  { name: 'Jijiga',         lat: 9.35,  lng: 42.80, size: 0.35, capital: false },
-  { name: 'Dessie',         lat: 11.13, lng: 39.64, size: 0.35, capital: false },
-  { name: 'Harar',          lat: 9.31,  lng: 42.12, size: 0.35, capital: false },
-  { name: 'Nekemte',        lat: 9.09,  lng: 36.55, size: 0.30, capital: false },
-  { name: 'Arba Minch',     lat: 6.04,  lng: 37.55, size: 0.30, capital: false },
-  { name: 'Axum',           lat: 14.12, lng: 38.72, size: 0.30, capital: false },
-  { name: 'Assosa',         lat: 10.07, lng: 34.53, size: 0.28, capital: false },
-  { name: 'Gambela',        lat: 8.25,  lng: 34.59, size: 0.28, capital: false },
-  { name: 'Semera',         lat: 11.79, lng: 41.02, size: 0.28, capital: false },
-  { name: 'Woldia',         lat: 11.83, lng: 39.60, size: 0.28, capital: false },
-  { name: 'Bishoftu',       lat: 8.75,  lng: 38.98, size: 0.28, capital: false },
-  { name: 'Debre Markos',   lat: 10.34, lng: 37.73, size: 0.28, capital: false },
-];
+// City labels are derived dynamically from live event data — no hardcoded list.
 
 // ── Base palette (globe chrome) ───────────────────────────────────────────────
 const RED = '#e11d48'; // Ethiopia border + rings
@@ -59,23 +36,23 @@ const RING_ALT           = 0.0;
 // Land: very dark navy. Ethiopia: slightly elevated + brighter border.
 function polyCapColor(f: any) {
   return f.properties?.ADMIN === 'Ethiopia'
-    ? 'rgba(14,20,38,0.97)'   // Ethiopia — dark blue-navy
-    : 'rgba(6,9,18,0.92)';    // rest of world — near-black navy
+    ? 'rgba(14,20,38,0.97)'
+    : 'rgba(6,9,18,0.92)';
 }
 function polyStrokeColor(f: any) {
   return f.properties?.ADMIN === 'Ethiopia'
-    ? RED                      // Ethiopia border — vivid red
-    : 'rgba(225,29,72,0.18)'; // other borders — faint red trace
+    ? RED
+    : 'rgba(225,29,72,0.18)';
 }
 function polyAltitude(f: any) {
   return f.properties?.ADMIN === 'Ethiopia' ? 0.003 : 0.001;
 }
-// Labels: capital in red, others in soft white
+// Dynamic label helpers — hotspot intensity drives size & colour
 function labelColor(d: any) {
-  return d.capital ? RED : 'rgba(255,255,255,0.65)';
+  return d.count >= 5 ? RED : 'rgba(255,255,255,0.70)';
 }
-function labelDotRadius(d: any) { return d.capital ? 0.45 : 0.28; }
-function labelSize(d: any)      { return d.size; }
+function labelDotRadius(d: any) { return d.count >= 5 ? 0.45 : 0.28; }
+function labelSize(d: any)      { return Math.max(0.28, Math.min(0.7, 0.28 + d.count * 0.04)); }
 function ringMaxRadius(d: any)  {
   return Math.max(1.5, Math.min((d.current_score || 4) * 0.55, 7));
 }
@@ -203,6 +180,30 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
     [enriched],
   );
 
+  // ── Dynamic location labels — built from live event coordinates ─────────────
+  // Groups events by location name, deduplicates, shows label only where events exist.
+  const locationLabels = useMemo(() => {
+    const map = new Map<string, { name: string; lat: number; lng: number; count: number }>();
+    for (const ev of events) {
+      if (!ev.latitude || !ev.longitude || !ev.location) continue;
+      const key = ev.location.trim();
+      if (map.has(key)) {
+        map.get(key)!.count += 1;
+      } else {
+        map.set(key, {
+          name:  key,
+          lat:   ev.latitude,
+          lng:   ev.longitude,
+          count: 1,
+        });
+      }
+    }
+    // Keep top 25 hotspots by event count so the map stays readable
+    return [...map.values()]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 25);
+  }, [events]);
+
   // ── Stable polygon features array ─────────────────────────────────────────
   const polyFeatures = useMemo(() => countries.features, [countries.features]);
 
@@ -263,8 +264,8 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
         pointsMerge={false}
         onPointClick={handlePointClick}
 
-        // City labels
-        labelsData={ETHIOPIA_CITIES}
+        // Dynamic location labels — derived from live events (no hardcoded cities)
+        labelsData={locationLabels}
         labelLat="lat"
         labelLng="lng"
         labelText="name"
