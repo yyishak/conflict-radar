@@ -1,4 +1,8 @@
-import { Swords, Flame, CloudRain, Plane, Scale, Satellite, Zap, type LucideIcon } from 'lucide-react';
+import {
+  Swords, Flame, CloudRain, Plane, Scale, Satellite, Zap,
+  Waves, Mountain, Wind,
+  type LucideIcon,
+} from 'lucide-react';
 
 export const CATEGORY_CONFIG = {
   War: {
@@ -18,9 +22,30 @@ export const CATEGORY_CONFIG = {
   Drought: {
     color: '#f59e0b',
     bgColor: 'rgba(245,158,11,0.14)',
-    label: 'Drought',
+    label: 'Drought / Famine',
     Icon: CloudRain,
-    desc: 'Natural hazards & humanitarian crises',
+    desc: 'Drought, famine & humanitarian crises',
+  },
+  Earthquake: {
+    color: '#ea580c',
+    bgColor: 'rgba(234,88,12,0.14)',
+    label: 'Earthquake',
+    Icon: Mountain,
+    desc: 'Seismic activity & ground rupture events',
+  },
+  Flood: {
+    color: '#2563eb',
+    bgColor: 'rgba(37,99,235,0.14)',
+    label: 'Flood',
+    Icon: Waves,
+    desc: 'Flash floods, river floods & inundation',
+  },
+  Wildfire: {
+    color: '#dc2626',
+    bgColor: 'rgba(220,38,38,0.14)',
+    label: 'Wildfire',
+    Icon: Wind,
+    desc: 'Active wildfires & burn detections',
   },
   Flight: {
     color: '#06b6d4',
@@ -74,7 +99,20 @@ export function classifyEvent(
   // ── Source-based rules (authoritative) ──────────────────────────────────────
   if (s.includes('opensky') || s.includes('airlabs'))           return 'Flight';
   if (s.includes('acled'))                                       return 'War';
-  if (s.includes('gdacs') || s.includes('reliefweb') || s.includes('hdx')) return 'Drought';
+  if (s.includes('usgs'))                                        return 'Earthquake';
+  if (s.includes('eonet') || s.includes('nasa eonet')) {
+    if (t.includes('wildfire') || t.includes('fire'))            return 'Wildfire';
+    if (t.includes('flood') || t.includes('storm surge'))        return 'Flood';
+    if (t.includes('earthquake') || t.includes('seismic') || t.includes('volcano')) return 'Earthquake';
+    return 'Drought';
+  }
+  if (s.includes('gdacs')) {
+    if (t.includes('flood'))                                     return 'Flood';
+    if (t.includes('earthquake') || t.includes('volcano'))       return 'Earthquake';
+    if (t.includes('fire') || t.includes('wildfire'))            return 'Wildfire';
+    return 'Drought';
+  }
+  if (s.includes('reliefweb') || s.includes('hdx'))             return 'Drought';
 
   // ── ACLED canonical type strings ─────────────────────────────────────────────
   if (
@@ -89,10 +127,17 @@ export function classifyEvent(
     t.includes('shelling') || t.includes('artillery')
   ) return 'Missile';
 
-  // ── GDACS / disaster type strings ────────────────────────────────────────────
+  // ── Specific disaster type strings ───────────────────────────────────────────
+  if (t.includes('earthquake') || t.includes('seismic') || t.includes('tremor'))
+    return 'Earthquake';
+  if (t.includes('flood') || t.includes('inundation') || t.includes('storm surge'))
+    return 'Flood';
+  if (t.includes('wildfire') || (t.includes('fire') && !t.includes('gunfire')))
+    return 'Wildfire';
+
+  // ── General disaster / hazard fallback ───────────────────────────────────────
   if (
-    t.includes('fire') || t.includes('flood') || t.includes('cyclone') ||
-    t.includes('earthquake') || t.includes('volcano') || t.includes('drought') ||
+    t.includes('cyclone') || t.includes('volcano') || t.includes('drought') ||
     t.includes('famine') || t.includes('disaster') || t.includes('hazard') ||
     t.includes('locust') || t.includes('disease') || t.includes('epidemic')
   ) return 'Drought';

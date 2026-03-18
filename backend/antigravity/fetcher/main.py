@@ -21,6 +21,8 @@ from backend.antigravity.fetcher.sources.nyt        import fetch_nyt_world_confl
 from backend.antigravity.fetcher.sources.opensky    import fetch_opensky_global_snapshot
 from backend.antigravity.fetcher.sources.airlabs    import fetch_airlabs_flights_snapshot
 from backend.antigravity.fetcher.sources.sentinel   import fetch_sentinel_ethiopia_observations
+from backend.antigravity.fetcher.sources.usgs       import fetch_usgs_earthquakes
+from backend.antigravity.fetcher.sources.eonet      import fetch_eonet_events
 from backend.antigravity.fetcher.sentiment          import process_latest_sentiment
 from backend.antigravity.fetcher.briefing           import generate_situational_briefing
 
@@ -37,6 +39,8 @@ def run_all_fetchers():
     # ── Natural hazards ───────────────────────────────────────
     fetch_gdacs_ethiopia()
     fetch_reliefweb_ethiopia()
+    fetch_usgs_earthquakes()
+    fetch_eonet_events()
 
     # ── News, scrapers & vibe ─────────────────────────────────
     fetch_ethiopia_news()
