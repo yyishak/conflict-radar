@@ -2,8 +2,6 @@
 
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import Globe from 'react-globe.gl';
-import { CATEGORY_CONFIG, type EventCategory } from '@/lib/categories';
-
 interface GlobeMapProps {
   events: any[];
   onEventClick: (event: any) => void;
@@ -36,54 +34,48 @@ const ETHIOPIA_CITIES = [
   { name: 'Debre Markos',   lat: 10.34, lng: 37.73, size: 0.28, capital: false },
 ];
 
-// ── Pre-parse category colours to { r, g, b } once at module load ─────────────
-const CAT_RGB: Record<string, { r: number; g: number; b: number }> = {};
-for (const [id, cfg] of Object.entries(CATEGORY_CONFIG)) {
-  const hex = cfg.color.replace('#', '');
-  CAT_RGB[id] = {
-    r: parseInt(hex.slice(0, 2), 16),
-    g: parseInt(hex.slice(2, 4), 16),
-    b: parseInt(hex.slice(4, 6), 16),
-  };
-}
-// Fallback (General)
-const fallbackRgb = CAT_RGB['General'];
+// ── 2-colour palette: everything is either dark navy or crimson red ───────────
+const RED   = '#e11d48';   // active events, Ethiopia border, rings
+const WHITE = '#ffffff';   // city labels, capital dot
 
 // ── Stable module-level callbacks (never cause re-renders) ────────────────────
-const POLY_SIDE_COLOR    = () => 'rgba(225,29,72,0.06)';
+const POLY_SIDE_COLOR    = () => 'rgba(225,29,72,0.04)';
 const LABEL_DOT_ORIENT   = () => 'bottom' as const;
 const POINT_ALTITUDE     = 0.008;
-const POINT_RADIUS       = 0.38;
+const POINT_RADIUS       = 0.42;
 const RING_PROPAGATION   = 1.8;
 const RING_PERIOD        = 1400;
 const RING_ALT           = 0.0;
 
+// Land: very dark navy. Ethiopia: slightly elevated + brighter border.
 function polyCapColor(f: any) {
   return f.properties?.ADMIN === 'Ethiopia'
-    ? 'rgba(12,18,32,0.92)'
-    : 'rgba(6,8,14,0.88)';
+    ? 'rgba(14,20,38,0.97)'   // Ethiopia — dark blue-navy
+    : 'rgba(6,9,18,0.92)';    // rest of world — near-black navy
 }
 function polyStrokeColor(f: any) {
-  return f.properties?.ADMIN === 'Ethiopia' ? '#e11d48' : 'rgba(225,29,72,0.22)';
+  return f.properties?.ADMIN === 'Ethiopia'
+    ? RED                      // Ethiopia border — vivid red
+    : 'rgba(225,29,72,0.18)'; // other borders — faint red trace
 }
 function polyAltitude(f: any) {
   return f.properties?.ADMIN === 'Ethiopia' ? 0.003 : 0.001;
 }
+// Labels: capital in red, others in soft white
 function labelColor(d: any) {
-  return d.capital ? '#e11d48' : 'rgba(255,255,255,0.72)';
+  return d.capital ? RED : 'rgba(255,255,255,0.65)';
 }
-function labelDotRadius(d: any) {
-  return d.capital ? 0.45 : 0.28;
-}
-function labelSize(d: any) { return d.size; }
-function ringMaxRadius(d: any) {
+function labelDotRadius(d: any) { return d.capital ? 0.45 : 0.28; }
+function labelSize(d: any)      { return d.size; }
+function ringMaxRadius(d: any)  {
   return Math.max(1.5, Math.min((d.current_score || 4) * 0.55, 7));
 }
-function pointColor(d: any) { return d._c; }
+// All event dots: crimson red (2-colour mode — no per-category palette)
+function pointColor(_d: any) { return RED; }
 
-// Ring colour: seismic-style indicator (fixed red, fading outwards)
+// Ring colour: seismic-style, red fading outwards
 function ringColor(_d: any) {
-  return (t: number) => `rgba(239,68,68,${Math.max(0, 1 - t)})`; // tailwind red-500
+  return (t: number) => `rgba(225,29,72,${Math.max(0, 1 - t)})`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -174,21 +166,8 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
     }
   }, [view, ready]);
 
-  // ── Enrich events: inject precomputed RGB + colour string ─────────────────
-  // Only runs when `events` reference changes (controlled by parent useMemo)
-  const enriched = useMemo(() =>
-    events.map(ev => {
-      const rgb = CAT_RGB[ev.category] ?? fallbackRgb;
-      return {
-        ...ev,
-        _c: CATEGORY_CONFIG[ev.category as EventCategory]?.color ?? CATEGORY_CONFIG.General.color,
-        _r: rgb.r,
-        _g: rgb.g,
-        _b: rgb.b,
-      };
-    }),
-    [events],
-  );
+  // ── Enrich events: stable reference, no per-category colours needed ──────────
+  const enriched = useMemo(() => events.map(ev => ({ ...ev })), [events]);
 
   // Build multi-ring indicator per event (seismic-style concentric discs)
   const ringLayers = useMemo(
@@ -298,16 +277,17 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
           : 'Flight radar: OpenSky Network · AirLabs'}
       </div>
 
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 flex flex-col gap-1.5 bg-black/75 border border-radar-border rounded px-3 py-2.5 backdrop-blur-sm pointer-events-none">
-        <span className="text-[9px] text-gray-500 font-mono uppercase tracking-[0.18em] mb-0.5">Event Layer</span>
-        {(Object.entries(CATEGORY_CONFIG) as [EventCategory, typeof CATEGORY_CONFIG[EventCategory]][]).map(([id, cfg]) => (
-          <div key={id} className="flex items-center gap-2">
-            <span className="text-[10px] leading-none">{cfg.icon}</span>
-            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cfg.color, boxShadow: `0 0 5px ${cfg.color}80` }} />
-            <span className="text-[9px] text-gray-400 font-mono uppercase tracking-wide">{cfg.label}</span>
-          </div>
-        ))}
+      {/* 2-colour legend */}
+      <div className="absolute bottom-4 left-4 flex flex-col gap-2 bg-black/75 border border-[#e11d48]/30 rounded px-3 py-2.5 backdrop-blur-sm pointer-events-none">
+        <span className="text-[9px] text-[#e11d48]/70 font-mono uppercase tracking-[0.18em] mb-0.5">Intel Layer</span>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#e11d48] shadow-[0_0_6px_#e11d48aa]" />
+          <span className="text-[9px] text-gray-300 font-mono uppercase tracking-wide">Active events</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full flex-shrink-0 border border-[#e11d48]/60" style={{ background: 'rgba(14,20,38,0.97)' }} />
+          <span className="text-[9px] text-gray-500 font-mono uppercase tracking-wide">Ethiopia — focus zone</span>
+        </div>
       </div>
 
       {/* Active count badge */}
