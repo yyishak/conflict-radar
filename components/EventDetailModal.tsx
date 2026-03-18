@@ -39,7 +39,7 @@ export function EventDetailModal({ event, onClose }: EventDetailModalProps) {
         {/* Header */}
         <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: `${cfg.color}30`, background: `${cfg.color}0d` }}>
           <div className="flex items-center gap-2">
-            <span className="text-base leading-none">{cfg.icon}</span>
+            <cfg.Icon className="w-4 h-4" style={{ color: cfg.color }} />
             <span
               className="w-2 h-2 rounded-full animate-pulse"
               style={{ background: cfg.color, boxShadow: `0 0 6px ${cfg.color}` }}
