@@ -14,6 +14,7 @@ from backend.antigravity.fetcher.sources.scraper    import fetch_ground_truth
 from backend.antigravity.fetcher.sources.nyt        import fetch_nyt_world_conflict
 from backend.antigravity.fetcher.sources.opensky    import fetch_opensky_global_snapshot
 from backend.antigravity.fetcher.sources.airlabs    import fetch_airlabs_flights_snapshot
+from backend.antigravity.fetcher.sources.sentinel   import fetch_sentinel_ethiopia_observations
 from backend.antigravity.fetcher.sentiment          import process_latest_sentiment
 from backend.antigravity.fetcher.briefing           import generate_situational_briefing
 
@@ -40,6 +41,9 @@ def run_all_fetchers():
     # ── Air activity (flight radar layers: OpenSky + AirLabs) ─
     fetch_opensky_global_snapshot()
     fetch_airlabs_flights_snapshot()
+
+    # ── Satellite Earth Observation (Sentinel Hub) ─────────────
+    fetch_sentinel_ethiopia_observations()
 
     # ── AI sentiment + briefing ───────────────────────────────
     process_latest_sentiment()

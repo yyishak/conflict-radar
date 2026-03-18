@@ -34,6 +34,13 @@ export const CATEGORY_CONFIG = {
     icon: '⚖',
     desc: 'Protests, coups & diplomatic events',
   },
+  Satellite: {
+    color: '#38bdf8',
+    bgColor: 'rgba(56,189,248,0.14)',
+    label: 'Satellite',
+    icon: '🛰',
+    desc: 'Sentinel-2 burn scar, flood & change detections',
+  },
   General: {
     color: '#a78bfa',
     bgColor: 'rgba(167,139,250,0.14)',
@@ -81,6 +88,12 @@ export function classifyEvent(type: string | null | undefined): EventCategory {
     t.includes('attack') || t.includes('killing') || t.includes('death') ||
     t.includes('armed') || t.includes('militia') || t.includes('ambush')
   ) return 'War';
+
+  if (
+    t.includes('satellite') || t.includes('sentinel') || t.includes('burn scar') ||
+    t.includes('burn area') || t.includes('satellite detection') || t.includes('sar') ||
+    t.includes('ndvi') || t.includes('earth observation')
+  ) return 'Satellite';
 
   return 'General';
 }
