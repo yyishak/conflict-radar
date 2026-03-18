@@ -11,6 +11,7 @@ import { FilterBar } from '@/components/FilterBar';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { classifyEvent, ALL_CATEGORIES, type EventCategory } from '@/lib/categories';
+import { resolveCoords } from '@/lib/ethiopia-coords';
 
 const GlobeMap = dynamic(() => import('@/components/GlobeMap'), {
   ssr: false,
@@ -44,12 +45,19 @@ export default function Home() {
     setActiveFilters(new Set(cats));
   }, []);
 
-  const enrichEvent = (ev: any) => ({
-    ...ev,
-    current_score: (ev.risk_level ?? 1) * 2,
-    category: classifyEvent(ev.type, ev.source),
-    text: ev.description?.substring(0, 30) || 'Intelligence Pulse',
-  });
+  const enrichEvent = (ev: any) => {
+    // Use stored coords if available, otherwise resolve from location text
+    const hasCoords = ev.latitude && ev.longitude;
+    const fallback  = hasCoords ? null : resolveCoords(ev.location);
+    return {
+      ...ev,
+      latitude:      hasCoords ? ev.latitude  : (fallback?.lat ?? null),
+      longitude:     hasCoords ? ev.longitude : (fallback?.lng ?? null),
+      current_score: (ev.risk_level ?? 1) * 2,
+      category:      classifyEvent(ev.type, ev.source),
+      text:          ev.description?.substring(0, 30) || 'Intelligence Pulse',
+    };
+  };
 
   useEffect(() => {
     const fetchEvents = async () => {

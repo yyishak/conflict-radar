@@ -103,32 +103,44 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
   }, []);
 
   // ── Globe ready ───────────────────────────────────────────────────────────
+  // Dependency-free: onGlobeReady fires only once on mount.
+  // Camera preset on view change is handled by the separate useEffect below.
   const onGlobeReady = useCallback(() => {
-    const g = globeRef.current;
-    if (!g) return;
+    try {
+      const g = globeRef.current;
+      if (!g) return;
 
-    const cam = VIEW_CAMERA[view] ?? VIEW_CAMERA.ethiopia;
-    g.pointOfView(cam, 1400);
+      g.pointOfView(VIEW_CAMERA.ethiopia, 1400);
 
-    const renderer = g.renderer?.();
-    if (renderer) renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+      try {
+        const renderer = g.renderer?.();
+        if (renderer) renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+      } catch (_) { /* renderer not critical */ }
 
-    const ctrl = g.controls();
-    ctrl.autoRotate    = false;
-    ctrl.enableRotate  = true;
-    ctrl.enablePan     = false;
-    ctrl.enableZoom    = true;
-    ctrl.zoomSpeed     = 0.6;
-    ctrl.rotateSpeed   = 0.5;
-    ctrl.enableDamping = true;
-    ctrl.dampingFactor = 0.12;
+      try {
+        const ctrl = g.controls?.();
+        if (ctrl) {
+          ctrl.autoRotate    = false;
+          ctrl.enableRotate  = true;
+          ctrl.enablePan     = false;
+          ctrl.enableZoom    = true;
+          ctrl.zoomSpeed     = 0.6;
+          ctrl.rotateSpeed   = 0.5;
+          ctrl.enableDamping = true;
+          ctrl.dampingFactor = 0.12;
+        }
+      } catch (_) { /* controls not critical */ }
 
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      setMotionFactor(0.5);
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+        setMotionFactor(0.5);
+      }
+    } catch (err) {
+      console.warn('GlobeMap onGlobeReady error:', err);
+    } finally {
+      // Always mark ready so the loading overlay disappears
+      setReady(true);
     }
-
-    setReady(true);
-  }, [view]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Camera preset on view change ──────────────────────────────────────────
   useEffect(() => {
@@ -186,6 +198,11 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
 
   const polyFeatures = useMemo(() => countries.features, [countries.features]);
 
+  const ringMaxRadiusScaled = useCallback(
+    (d: any) => ringMaxRadius(d) * (d._ringScale ?? 1),
+    [],
+  );
+
   const handlePointClick = useCallback(
     (point: any) => onEventClick(point),
     [onEventClick],
@@ -199,9 +216,11 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
         height={dims.h}
         onGlobeReady={onGlobeReady}
 
-        globeImageUrl={liteMode ? '/earth-dark.jpg' : '/earth-night.jpg'}
-        bumpImageUrl={undefined}
-        backgroundImageUrl={undefined}
+        globeImageUrl={
+          liteMode
+            ? 'https://unpkg.com/three-globe/example/img/earth-dark.jpg'
+            : 'https://unpkg.com/three-globe/example/img/earth-night.jpg'
+        }
 
         showAtmosphere={!liteMode}
         atmosphereColor="#c0142a"
@@ -218,7 +237,7 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
         ringLat="latitude"
         ringLng="longitude"
         ringColor={ringColor}
-        ringMaxRadius={(d: any) => ringMaxRadius(d) * (d._ringScale ?? 1)}
+        ringMaxRadius={ringMaxRadiusScaled}
         ringPropagationSpeed={RING_PROPAGATION * motionFactor * (liteMode ? 0.8 : 1)}
         ringRepeatPeriod={RING_PERIOD}
         ringAltitude={RING_ALT}
