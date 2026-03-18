@@ -1,4 +1,4 @@
-name: Conflict Radar — Data Fetcher Pulse
+name: Conflict Radar - Data Fetcher Pulse
 
 on:
   schedule:
@@ -28,17 +28,27 @@ jobs:
 
       - name: Run all fetchers (single-run mode)
         env:
-          # ── Required ──────────────────────────────────────────────
+          # -- Required (Supabase) --
           SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-          # ── ACLED conflict data (register free at developer.acleddata.com) ──
+          # -- ACLED conflict data --
           ACLED_EMAIL: ${{ secrets.ACLED_EMAIL }}
           ACLED_KEY:   ${{ secrets.ACLED_KEY }}
 
-          # ── NewsData.io headlines (register free at newsdata.io) ──
+          # -- NewsData.io headlines --
           NEWSDATA_API_KEY: ${{ secrets.NEWSDATA_API_KEY }}
+
+          # -- New York Times Top Stories --
+          NYT_API_KEY: ${{ secrets.NYT_API_KEY }}
+
+          # -- AirLabs flight data --
+          AIRLABS_API_KEY: ${{ secrets.AIRLABS_API_KEY }}
+
+          # -- Sentinel Hub Earth Observation --
+          SENTINEL_HUB_CLIENT_ID:     ${{ secrets.SENTINEL_HUB_CLIENT_ID }}
+          SENTINEL_HUB_CLIENT_SECRET: ${{ secrets.SENTINEL_HUB_CLIENT_SECRET }}
 
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
-          python backend/antigravity/fetcher/main.py --single-run
+          python -m backend.antigravity.fetcher.main --single-run

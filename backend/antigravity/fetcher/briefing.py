@@ -8,25 +8,33 @@ def generate_situational_briefing():
     """
     print("Generating situational briefing...")
 
-    # 1. Fetch latest events — Python supabase-py uses desc=True not {"ascending": False}
-    events_res = (
-        supabase.table("events")
-        .select("*")
-        .order("created_at", desc=True)
-        .limit(5)
-        .execute()
-    )
-    events = events_res.data if events_res.data else []
+    # 1. Fetch latest events
+    try:
+        events_res = (
+            supabase.table("events")
+            .select("*")
+            .order("created_at", desc=True)
+            .limit(5)
+            .execute()
+        )
+        events = events_res.data if events_res.data else []
+    except Exception as e:
+        print(f"  [briefing] Could not fetch events: {e}")
+        events = []
 
-    # 2. Fetch latest indicators
-    indicators_res = (
-        supabase.table("indicators")
-        .select("*")
-        .order("created_at", desc=True)
-        .limit(3)
-        .execute()
-    )
-    indicators = indicators_res.data if indicators_res.data else []
+    # 2. Fetch latest indicators (table may not exist yet)
+    try:
+        indicators_res = (
+            supabase.table("indicators")
+            .select("*")
+            .order("created_at", desc=True)
+            .limit(3)
+            .execute()
+        )
+        indicators = indicators_res.data if indicators_res.data else []
+    except Exception as e:
+        print(f"  [briefing] Could not fetch indicators (table missing?): {e}")
+        indicators = []
 
     if not events and not indicators:
         briefing = (
@@ -74,12 +82,15 @@ def generate_situational_briefing():
 
 
 def _store(content: str):
-    store_indicator({
-        "name": "SITUATIONAL_BRIEFING",
-        "value": 1.0,
-        "category": "Intelligence",
-        "metadata": {"content": content},
-    })
+    try:
+        store_indicator({
+            "name": "SITUATIONAL_BRIEFING",
+            "value": 1.0,
+            "category": "Intelligence",
+            "metadata": {"content": content},
+        })
+    except Exception as e:
+        print(f"  [briefing] Could not store briefing indicator: {e}")
 
 
 if __name__ == "__main__":
