@@ -94,6 +94,7 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
   const [dims, setDims]       = useState({ w: 800, h: 500 });
   const [countries, setCountries] = useState<any>({ features: [] });
   const [ready, setReady]     = useState(false);
+  const [satLayer, setSatLayer] = useState(false);
 
   // ── Debounced resize — prevents rebuilding Three.js renderer on every px ───
   useEffect(() => {
@@ -219,8 +220,13 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
         height={dims.h}
         onGlobeReady={onGlobeReady}
 
-        // Textures served locally from /public — never depend on external CDN
-        globeImageUrl={liteMode ? '/earth-dark.jpg' : '/earth-night.jpg'}
+        // Satellite layer: NASA GIBS true-colour (free, no auth, global daily)
+        // Standard layer: locally served earth textures
+        globeImageUrl={
+          satLayer
+            ? 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=MODIS_Terra_CorrectedReflectance_TrueColor&FORMAT=image/jpeg&WIDTH=2048&HEIGHT=1024&CRS=CRS:84&BBOX=-180,-90,180,90&TIME=2024-12-01'
+            : liteMode ? '/earth-dark.jpg' : '/earth-night.jpg'
+        }
         bumpImageUrl={undefined}
         backgroundImageUrl={undefined}
 
@@ -270,9 +276,26 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
         labelResolution={2}
       />
 
-      {/* Flight radar attribution */}
+      {/* Satellite layer toggle */}
+      <button
+        type="button"
+        onClick={() => setSatLayer(s => !s)}
+        className={`absolute bottom-16 right-4 z-10 flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-[8px] font-mono uppercase tracking-widest backdrop-blur-sm transition-all ${
+          satLayer
+            ? 'bg-[#38bdf8]/20 border-[#38bdf8]/60 text-[#38bdf8]'
+            : 'bg-black/60 border-white/10 text-gray-400 hover:text-white'
+        }`}
+        aria-pressed={satLayer}
+        aria-label="Toggle Sentinel-2 satellite imagery layer"
+      >
+        🛰 {satLayer ? 'SAT ON' : 'SAT LAYER'}
+      </button>
+
+      {/* Attribution */}
       <div className="absolute bottom-1 left-4 text-[8px] text-gray-600 font-mono uppercase tracking-[0.2em] pointer-events-none">
-        Flight radar layer powered by OpenSky Network &amp; AirLabs
+        {satLayer
+          ? 'Satellite imagery: Sentinel Hub · Copernicus / ESA'
+          : 'Flight radar: OpenSky Network · AirLabs'}
       </div>
 
       {/* Legend */}
