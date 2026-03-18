@@ -2,6 +2,8 @@
 
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import Globe from 'react-globe.gl';
+import { CATEGORY_CONFIG, type EventCategory } from '@/lib/categories';
+
 interface GlobeMapProps {
   events: any[];
   onEventClick: (event: any) => void;
@@ -34,9 +36,15 @@ const ETHIOPIA_CITIES = [
   { name: 'Debre Markos',   lat: 10.34, lng: 37.73, size: 0.28, capital: false },
 ];
 
-// ── 2-colour palette: everything is either dark navy or crimson red ───────────
-const RED   = '#e11d48';   // active events, Ethiopia border, rings
-const WHITE = '#ffffff';   // city labels, capital dot
+// ── Base palette (globe chrome) ───────────────────────────────────────────────
+const RED = '#e11d48'; // Ethiopia border + rings
+
+// ── Pre-parse category colours to hex string once at module load ─────────────
+const CAT_COLOR: Record<string, string> = {};
+for (const [id, cfg] of Object.entries(CATEGORY_CONFIG)) {
+  CAT_COLOR[id] = cfg.color;
+}
+const FALLBACK_COLOR = CATEGORY_CONFIG.General.color;
 
 // ── Stable module-level callbacks (never cause re-renders) ────────────────────
 const POLY_SIDE_COLOR    = () => 'rgba(225,29,72,0.04)';
@@ -70,12 +78,18 @@ function labelSize(d: any)      { return d.size; }
 function ringMaxRadius(d: any)  {
   return Math.max(1.5, Math.min((d.current_score || 4) * 0.55, 7));
 }
-// All event dots: crimson red (2-colour mode — no per-category palette)
-function pointColor(_d: any) { return RED; }
+// Event dot: colour by category
+function pointColor(d: any) {
+  return CAT_COLOR[d.category] ?? FALLBACK_COLOR;
+}
 
-// Ring colour: seismic-style, red fading outwards
-function ringColor(_d: any) {
-  return (t: number) => `rgba(225,29,72,${Math.max(0, 1 - t)})`;
+// Ring colour: uses each event's category colour, fades outward (seismic-style)
+function ringColor(d: any) {
+  const hex = (CAT_COLOR[d.category] ?? FALLBACK_COLOR).replace('#', '');
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  return (t: number) => `rgba(${r},${g},${b},${Math.max(0, 1 - t)})`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -166,8 +180,14 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
     }
   }, [view, ready]);
 
-  // ── Enrich events: stable reference, no per-category colours needed ──────────
-  const enriched = useMemo(() => events.map(ev => ({ ...ev })), [events]);
+  // ── Enrich events: attach resolved category colour ───────────────────────────
+  const enriched = useMemo(() =>
+    events.map(ev => ({
+      ...ev,
+      _c: CAT_COLOR[ev.category] ?? FALLBACK_COLOR,
+    })),
+    [events],
+  );
 
   // Build multi-ring indicator per event (seismic-style concentric discs)
   const ringLayers = useMemo(
@@ -277,17 +297,16 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
           : 'Flight radar: OpenSky Network · AirLabs'}
       </div>
 
-      {/* 2-colour legend */}
-      <div className="absolute bottom-4 left-4 flex flex-col gap-2 bg-black/75 border border-[#e11d48]/30 rounded px-3 py-2.5 backdrop-blur-sm pointer-events-none">
-        <span className="text-[9px] text-[#e11d48]/70 font-mono uppercase tracking-[0.18em] mb-0.5">Intel Layer</span>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#e11d48] shadow-[0_0_6px_#e11d48aa]" />
-          <span className="text-[9px] text-gray-300 font-mono uppercase tracking-wide">Active events</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full flex-shrink-0 border border-[#e11d48]/60" style={{ background: 'rgba(14,20,38,0.97)' }} />
-          <span className="text-[9px] text-gray-500 font-mono uppercase tracking-wide">Ethiopia — focus zone</span>
-        </div>
+      {/* Category legend */}
+      <div className="absolute bottom-4 left-4 flex flex-col gap-1.5 bg-black/75 border border-radar-border rounded px-3 py-2.5 backdrop-blur-sm pointer-events-none">
+        <span className="text-[9px] text-gray-500 font-mono uppercase tracking-[0.18em] mb-0.5">Event Layer</span>
+        {(Object.entries(CATEGORY_CONFIG) as [EventCategory, typeof CATEGORY_CONFIG[EventCategory]][]).map(([id, cfg]) => (
+          <div key={id} className="flex items-center gap-2">
+            <span className="text-[10px] leading-none">{cfg.icon}</span>
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cfg.color, boxShadow: `0 0 5px ${cfg.color}80` }} />
+            <span className="text-[9px] text-gray-400 font-mono uppercase tracking-wide">{cfg.label}</span>
+          </div>
+        ))}
       </div>
 
       {/* Active count badge */}
