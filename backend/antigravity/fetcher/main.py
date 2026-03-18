@@ -1,6 +1,12 @@
 import time
 import sys
+import os
 import schedule
+
+# Force UTF-8 output on Windows so Unicode chars don't crash
+if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 from backend.antigravity.fetcher.sources.acled      import fetch_acled_ethiopia
 from backend.antigravity.fetcher.sources.hdx        import fetch_hdx_ethiopia_datasets
