@@ -32,9 +32,9 @@ jobs:
           SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-          # -- ACLED conflict data --
-          ACLED_EMAIL: ${{ secrets.ACLED_EMAIL }}
-          ACLED_KEY:   ${{ secrets.ACLED_KEY }}
+          # -- ACLED conflict data (cookie-based auth, Sep 2025+) --
+          ACLED_EMAIL:    ${{ secrets.ACLED_EMAIL }}
+          ACLED_PASSWORD: ${{ secrets.ACLED_PASSWORD }}
 
           # -- NewsData.io headlines --
           NEWSDATA_API_KEY: ${{ secrets.NEWSDATA_API_KEY }}
