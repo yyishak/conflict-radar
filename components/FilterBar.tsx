@@ -1,5 +1,6 @@
 'use client';
 
+import { Check } from 'lucide-react';
 import { CATEGORY_CONFIG, ALL_CATEGORIES, type EventCategory } from '@/lib/categories';
 
 interface FilterBarProps {
@@ -36,7 +37,10 @@ export function FilterBar({ activeFilters, onToggle, onSetAll, counts }: FilterB
           opacity: allActive ? 1 : 0.5,
         }}
       >
-        {allActive ? 'ALL ✓' : noneActive ? 'NONE' : 'ALL'}
+        <span className="flex items-center gap-1">
+          {allActive && <Check className="w-2.5 h-2.5" />}
+          {allActive ? 'ALL' : noneActive ? 'NONE' : 'ALL'}
+        </span>
       </button>
 
       <span className="text-[9px] text-radar-border shrink-0">|</span>
@@ -62,7 +66,7 @@ export function FilterBar({ activeFilters, onToggle, onSetAll, counts }: FilterB
             }}
           >
             {/* Icon */}
-            <span className="text-[11px] leading-none">{cfg.icon}</span>
+            <cfg.Icon className="w-3 h-3 shrink-0" />
 
             {/* Label */}
             <span className="leading-none">{cfg.label}</span>

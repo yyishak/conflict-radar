@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { TrendingUp, TrendingDown, Minus, Fuel, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface Quote {
@@ -20,10 +21,10 @@ interface CommodityData {
 }
 
 function TrendArrow({ change }: { change: number | null }) {
-  if (change === null) return <span className="text-gray-600">—</span>;
-  if (change > 0) return <span className="text-green-400">▲</span>;
-  if (change < 0) return <span className="text-radar-red">▼</span>;
-  return <span className="text-gray-500">—</span>;
+  if (change === null) return <Minus className="w-3 h-3 text-gray-600" />;
+  if (change > 0) return <TrendingUp className="w-3 h-3 text-green-400" />;
+  if (change < 0) return <TrendingDown className="w-3 h-3 text-radar-red" />;
+  return <Minus className="w-3 h-3 text-gray-500" />;
 }
 
 function CommodityRow({ quote }: { quote: Quote }) {
@@ -132,7 +133,8 @@ export function EconomicSidebar({ layout = 'sidebar' }: EconomicSidebarProps) {
         >
           <div className="flex justify-between items-center">
             <h3 className="text-[10px] uppercase text-gray-500 font-bold tracking-widest group-hover:text-white transition-colors flex items-center gap-1.5">
-              <span>🛢</span> Oil &amp; Commodities
+              <Fuel className="w-3.5 h-3.5 shrink-0" />
+              Oil &amp; Commodities
             </h3>
             <div className="flex items-center gap-2">
               {lastUpdated && (
@@ -140,10 +142,10 @@ export function EconomicSidebar({ layout = 'sidebar' }: EconomicSidebarProps) {
               )}
               <button
                 onClick={e => { e.stopPropagation(); fetchCommodities(); }}
-                className="text-[8px] text-gray-500 hover:text-white font-mono transition-colors"
+                className="text-gray-500 hover:text-white transition-colors"
                 title="Refresh prices"
               >
-                ↺
+                <RefreshCw className="w-3 h-3" />
               </button>
               <span className="text-[8px] text-radar-orange font-mono">
                 {expandedSection === 'oil' ? '[-]' : '[+]'}

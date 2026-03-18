@@ -1,56 +1,62 @@
+import { Swords, Flame, CloudRain, Plane, Scale, Satellite, Zap, type LucideIcon } from 'lucide-react';
+
 export const CATEGORY_CONFIG = {
   War: {
     color: '#e11d48',
     bgColor: 'rgba(225,29,72,0.14)',
     label: 'War',
-    icon: '⚔',
+    Icon: Swords,
     desc: 'Armed conflict & battlefield violence',
   },
   Missile: {
     color: '#f97316',
     bgColor: 'rgba(249,115,22,0.14)',
     label: 'Missiles',
-    icon: '🚀',
+    Icon: Flame,
     desc: 'Airstrikes, missile & explosive events',
   },
   Drought: {
     color: '#f59e0b',
     bgColor: 'rgba(245,158,11,0.14)',
     label: 'Drought',
-    icon: '☁',
+    Icon: CloudRain,
     desc: 'Natural hazards & humanitarian crises',
   },
   Flight: {
     color: '#06b6d4',
     bgColor: 'rgba(6,182,212,0.14)',
     label: 'Flight Radar',
-    icon: '✈',
+    Icon: Plane,
     desc: 'Aviation, drone & airspace activity',
   },
   Political: {
     color: '#22c55e',
     bgColor: 'rgba(34,197,94,0.14)',
     label: 'Political',
-    icon: '⚖',
+    Icon: Scale,
     desc: 'Protests, coups & diplomatic events',
   },
   Satellite: {
     color: '#38bdf8',
     bgColor: 'rgba(56,189,248,0.14)',
     label: 'Satellite',
-    icon: '🛰',
+    Icon: Satellite,
     desc: 'Sentinel-2 burn scar, flood & change detections',
   },
   General: {
     color: '#a78bfa',
     bgColor: 'rgba(167,139,250,0.14)',
     label: 'General',
-    icon: '⚡',
+    Icon: Zap,
     desc: 'Unclassified incidents',
   },
 } as const;
 
 export type EventCategory = keyof typeof CATEGORY_CONFIG;
+export type CategoryConfig = typeof CATEGORY_CONFIG[EventCategory];
+
+// Re-export LucideIcon type for consumers
+export type { LucideIcon };
 
 export const ALL_CATEGORIES = Object.keys(CATEGORY_CONFIG) as EventCategory[];
 

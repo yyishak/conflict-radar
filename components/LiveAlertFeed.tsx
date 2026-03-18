@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { MapPin, ExternalLink } from 'lucide-react';
 import { CATEGORY_CONFIG, type EventCategory } from '@/lib/categories';
 
 interface LiveAlertFeedProps {
@@ -111,10 +112,11 @@ export function LiveAlertFeed({ events, layout = 'sidebar' }: LiveAlertFeedProps
                         </span>
                       )}
                       <span
-                        className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded"
+                        className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded flex items-center gap-1"
                         style={{ color: c.color, background: `${c.color}18` }}
                       >
-                        {c.icon} {c.label}
+                        <c.Icon className="w-2.5 h-2.5" />
+                        {c.label}
                       </span>
                     </div>
                     <span className="text-[8px] text-gray-500 font-mono tabular-nums">
@@ -136,7 +138,7 @@ export function LiveAlertFeed({ events, layout = 'sidebar' }: LiveAlertFeedProps
                   <div className="flex items-center gap-3">
                     {alert.location ? (
                       <span className="text-[9px] text-gray-500 font-mono flex items-center gap-1">
-                        <span>📍</span>
+                        <MapPin className="w-2.5 h-2.5 shrink-0" />
                         {alert.location}
                       </span>
                     ) : null}
@@ -185,7 +187,7 @@ export function LiveAlertFeed({ events, layout = 'sidebar' }: LiveAlertFeedProps
                           className="text-[9px] font-mono uppercase tracking-widest hover:underline flex items-center gap-1"
                           style={{ color: c.color }}
                         >
-                          Read full report ↗
+                          Read full report <ExternalLink className="w-2.5 h-2.5" />
                         </a>
                       ) : null}
                     </div>

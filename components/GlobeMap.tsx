@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import Globe from 'react-globe.gl';
+import { Satellite as SatelliteIcon } from 'lucide-react';
 import { CATEGORY_CONFIG, type EventCategory } from '@/lib/categories';
 
 interface GlobeMapProps {
@@ -287,7 +288,8 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
         aria-pressed={satLayer}
         aria-label="Toggle Sentinel-2 satellite imagery layer"
       >
-        🛰 {satLayer ? 'SAT ON' : 'SAT LAYER'}
+        <SatelliteIcon className="w-3 h-3" />
+        {satLayer ? 'SAT ON' : 'SAT LAYER'}
       </button>
 
       {/* Attribution */}
@@ -302,7 +304,7 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
         <span className="text-[9px] text-gray-500 font-mono uppercase tracking-[0.18em] mb-0.5">Event Layer</span>
         {(Object.entries(CATEGORY_CONFIG) as [EventCategory, typeof CATEGORY_CONFIG[EventCategory]][]).map(([id, cfg]) => (
           <div key={id} className="flex items-center gap-2">
-            <span className="text-[10px] leading-none">{cfg.icon}</span>
+            <cfg.Icon className="w-3 h-3 flex-shrink-0" style={{ color: cfg.color }} />
             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cfg.color, boxShadow: `0 0 5px ${cfg.color}80` }} />
             <span className="text-[9px] text-gray-400 font-mono uppercase tracking-wide">{cfg.label}</span>
           </div>
