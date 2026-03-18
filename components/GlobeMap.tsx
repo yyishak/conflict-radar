@@ -2,7 +2,6 @@
 
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import Globe from 'react-globe.gl';
-import { Satellite as SatelliteIcon } from 'lucide-react';
 import { CATEGORY_CONFIG, type EventCategory } from '@/lib/categories';
 
 interface GlobeMapProps {
@@ -12,28 +11,32 @@ interface GlobeMapProps {
   liteMode?: boolean;
 }
 
-// City labels are derived dynamically from live event data — no hardcoded list.
+// ── Base palette ──────────────────────────────────────────────────────────────
+const RED = '#e11d48';
 
-// ── Base palette (globe chrome) ───────────────────────────────────────────────
-const RED = '#e11d48'; // Ethiopia border + rings
-
-// ── Pre-parse category colours to hex string once at module load ─────────────
+// ── Pre-parse category colours once at module load ───────────────────────────
 const CAT_COLOR: Record<string, string> = {};
 for (const [id, cfg] of Object.entries(CATEGORY_CONFIG)) {
   CAT_COLOR[id] = cfg.color;
 }
 const FALLBACK_COLOR = CATEGORY_CONFIG.General.color;
 
-// ── Stable module-level callbacks (never cause re-renders) ────────────────────
-const POLY_SIDE_COLOR    = () => 'rgba(225,29,72,0.04)';
-const LABEL_DOT_ORIENT   = () => 'bottom' as const;
-const POINT_ALTITUDE     = 0.008;
-const POINT_RADIUS       = 0.42;
-const RING_PROPAGATION   = 1.8;
-const RING_PERIOD        = 1400;
-const RING_ALT           = 0.0;
+// ── Stable module-level constants ─────────────────────────────────────────────
+const POLY_SIDE_COLOR  = () => 'rgba(225,29,72,0.04)';
+const LABEL_DOT_ORIENT = () => 'bottom' as const;
+const POINT_ALTITUDE   = 0.008;
+const POINT_RADIUS     = 0.42;
+const RING_PROPAGATION = 1.8;
+const RING_PERIOD      = 1400;
+const RING_ALT         = 0.0;
 
-// Land: very dark navy. Ethiopia: slightly elevated + brighter border.
+// Camera altitude per view preset
+const VIEW_CAMERA = {
+  ethiopia: { lat: 9.145,  lng: 40.489, altitude: 1.6 },
+  horn:     { lat: 10.0,   lng: 42.0,   altitude: 2.2 },
+  global:   { lat: 20.0,   lng: 15.0,   altitude: 3.5 },
+};
+
 function polyCapColor(f: any) {
   return f.properties?.ADMIN === 'Ethiopia'
     ? 'rgba(14,20,38,0.97)'
@@ -47,7 +50,6 @@ function polyStrokeColor(f: any) {
 function polyAltitude(f: any) {
   return f.properties?.ADMIN === 'Ethiopia' ? 0.003 : 0.001;
 }
-// Dynamic label helpers — hotspot intensity drives size & colour
 function labelColor(d: any) {
   return d.count >= 5 ? RED : 'rgba(255,255,255,0.70)';
 }
@@ -56,12 +58,9 @@ function labelSize(d: any)      { return Math.max(0.28, Math.min(0.7, 0.28 + d.c
 function ringMaxRadius(d: any)  {
   return Math.max(1.5, Math.min((d.current_score || 4) * 0.55, 7));
 }
-// Event dot: colour by category
 function pointColor(d: any) {
   return CAT_COLOR[d.category] ?? FALLBACK_COLOR;
 }
-
-// Ring colour: uses each event's category colour, fades outward (seismic-style)
 function ringColor(d: any) {
   const hex = (CAT_COLOR[d.category] ?? FALLBACK_COLOR).replace('#', '');
   const r = parseInt(hex.slice(0, 2), 16);
@@ -70,17 +69,15 @@ function ringColor(d: any) {
   return (t: number) => `rgba(${r},${g},${b},${Math.max(0, 1 - t)})`;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function GlobeMap({ events, onEventClick, view, liteMode = false }: GlobeMapProps) {
-  const globeRef   = useRef<any>(null);
+  const globeRef     = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dims, setDims]       = useState({ w: 800, h: 500 });
+  const [dims, setDims]         = useState({ w: 800, h: 500 });
   const [countries, setCountries] = useState<any>({ features: [] });
-  const [ready, setReady]     = useState(false);
-  const [satLayer, setSatLayer] = useState(false);
+  const [ready, setReady]       = useState(false);
+  const [motionFactor, setMotionFactor] = useState(1);
 
-  // ── Debounced resize — prevents rebuilding Three.js renderer on every px ───
+  // ── Debounced resize ──────────────────────────────────────────────────────
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -97,7 +94,7 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
     return () => { ro.disconnect(); clearTimeout(timer); };
   }, []);
 
-  // ── Fetch country boundaries once ─────────────────────────────────────────
+  // ── Fetch country boundaries once ────────────────────────────────────────
   useEffect(() => {
     fetch('https://raw.githubusercontent.com/vasturiano/react-globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
       .then(r => r.json())
@@ -105,60 +102,44 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
       .catch(() => {});
   }, []);
 
-  const [motionFactor, setMotionFactor] = useState(1);
-
-  // ── Globe ready handler ───────────────────────────────────────────────────
+  // ── Globe ready ───────────────────────────────────────────────────────────
   const onGlobeReady = useCallback(() => {
     const g = globeRef.current;
     if (!g) return;
 
-    g.pointOfView({ lat: 9.145, lng: 40.489, altitude: 1.6 }, 1400);
+    const cam = VIEW_CAMERA[view] ?? VIEW_CAMERA.ethiopia;
+    g.pointOfView(cam, 1400);
 
-    // Cap pixel ratio to avoid 4× workload on Retina/HiDPI displays
     const renderer = g.renderer?.();
-    if (renderer) {
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    }
+    if (renderer) renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
     const ctrl = g.controls();
     ctrl.autoRotate    = false;
     ctrl.enableRotate  = true;
     ctrl.enablePan     = false;
     ctrl.enableZoom    = true;
-    // Allow closer inspection of Ethiopia and surrounding region
-    ctrl.minDistance   = 60;
-    ctrl.maxDistance   = 500;
     ctrl.zoomSpeed     = 0.6;
     ctrl.rotateSpeed   = 0.5;
     ctrl.enableDamping = true;
     ctrl.dampingFactor = 0.12;
 
-    // Respect prefers-reduced-motion
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       setMotionFactor(0.5);
-    } else {
-      setMotionFactor(1);
     }
 
     setReady(true);
-  }, []);
+  }, [view]);
 
-  // Camera presets based on view prop
+  // ── Camera preset on view change ──────────────────────────────────────────
   useEffect(() => {
     if (!ready) return;
     const g = globeRef.current;
     if (!g) return;
-
-    if (view === 'ethiopia') {
-      g.pointOfView({ lat: 9.145, lng: 40.489, altitude: 1.6 }, 1000);
-    } else if (view === 'horn') {
-      g.pointOfView({ lat: 10, lng: 42, altitude: 2.0 }, 1000);
-    } else {
-      g.pointOfView({ lat: 20, lng: 15, altitude: 3.0 }, 1000);
-    }
+    const cam = VIEW_CAMERA[view] ?? VIEW_CAMERA.ethiopia;
+    g.pointOfView(cam, 900);
   }, [view, ready]);
 
-  // ── Enrich events: attach resolved category colour ───────────────────────────
+  // ── Enrich events ─────────────────────────────────────────────────────────
   const enriched = useMemo(() =>
     events.map(ev => ({
       ...ev,
@@ -167,7 +148,7 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
     [events],
   );
 
-  // Build multi-ring indicator per event (seismic-style concentric discs)
+  // ── Seismic multi-ring layers ─────────────────────────────────────────────
   const ringLayers = useMemo(
     () =>
       enriched.flatMap(ev =>
@@ -180,8 +161,7 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
     [enriched],
   );
 
-  // ── Dynamic location labels — built from live event coordinates ─────────────
-  // Groups events by location name, deduplicates, shows label only where events exist.
+  // ── Dynamic location labels from live events ──────────────────────────────
   const locationLabels = useMemo(() => {
     const map = new Map<string, { name: string; lat: number; lng: number; count: number }>();
     for (const ev of events) {
@@ -190,24 +170,22 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
       if (map.has(key)) {
         map.get(key)!.count += 1;
       } else {
-        map.set(key, {
-          name:  key,
-          lat:   ev.latitude,
-          lng:   ev.longitude,
-          count: 1,
-        });
+        map.set(key, { name: key, lat: ev.latitude, lng: ev.longitude, count: 1 });
       }
     }
-    // Keep top 25 hotspots by event count so the map stays readable
     return [...map.values()]
       .sort((a, b) => b.count - a.count)
-      .slice(0, 25);
+      .slice(0, 20);
   }, [events]);
 
-  // ── Stable polygon features array ─────────────────────────────────────────
+  // ── Legend: only categories present in current events ────────────────────
+  const activeCategoryIds = useMemo(
+    () => [...new Set(events.map(e => e.category as EventCategory))],
+    [events],
+  );
+
   const polyFeatures = useMemo(() => countries.features, [countries.features]);
 
-  // ── Stable point click handler — doesn't change between renders ───────────
   const handlePointClick = useCallback(
     (point: any) => onEventClick(point),
     [onEventClick],
@@ -221,22 +199,14 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
         height={dims.h}
         onGlobeReady={onGlobeReady}
 
-        // Satellite layer: NASA GIBS true-colour (free, no auth, global daily)
-        // Standard layer: locally served earth textures
-        globeImageUrl={
-          satLayer
-            ? 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=MODIS_Terra_CorrectedReflectance_TrueColor&FORMAT=image/jpeg&WIDTH=2048&HEIGHT=1024&CRS=CRS:84&BBOX=-180,-90,180,90&TIME=2024-12-01'
-            : liteMode ? '/earth-dark.jpg' : '/earth-night.jpg'
-        }
+        globeImageUrl={liteMode ? '/earth-dark.jpg' : '/earth-night.jpg'}
         bumpImageUrl={undefined}
         backgroundImageUrl={undefined}
 
-        // Atmosphere
         showAtmosphere={!liteMode}
         atmosphereColor="#c0142a"
         atmosphereAltitude={0.08}
 
-        // Country polygons
         polygonsData={polyFeatures}
         polygonCapColor={polyCapColor}
         polygonSideColor={POLY_SIDE_COLOR}
@@ -244,7 +214,6 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
         polygonAltitude={polyAltitude}
         polygonsTransitionDuration={0}
 
-        // Event pulse rings
         ringsData={ringLayers}
         ringLat="latitude"
         ringLng="longitude"
@@ -254,7 +223,6 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
         ringRepeatPeriod={RING_PERIOD}
         ringAltitude={RING_ALT}
 
-        // Core dot at centre of every ring indicator
         pointsData={enriched}
         pointLat="latitude"
         pointLng="longitude"
@@ -264,7 +232,6 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
         pointsMerge={false}
         onPointClick={handlePointClick}
 
-        // Dynamic location labels — derived from live events (no hardcoded cities)
         labelsData={locationLabels}
         labelLat="lat"
         labelLng="lng"
@@ -277,56 +244,33 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
         labelResolution={2}
       />
 
-      {/* Satellite layer toggle */}
-      <button
-        type="button"
-        onClick={() => setSatLayer(s => !s)}
-        className={`absolute bottom-16 right-4 z-10 flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-[8px] font-mono uppercase tracking-widest backdrop-blur-sm transition-all ${
-          satLayer
-            ? 'bg-[#38bdf8]/20 border-[#38bdf8]/60 text-[#38bdf8]'
-            : 'bg-black/60 border-white/10 text-gray-400 hover:text-white'
-        }`}
-        aria-pressed={satLayer}
-        aria-label="Toggle Sentinel-2 satellite imagery layer"
-      >
-        <SatelliteIcon className="w-3 h-3" />
-        {satLayer ? 'SAT ON' : 'SAT LAYER'}
-      </button>
-
-      {/* Attribution */}
-      <div className="absolute bottom-1 left-4 text-[8px] text-gray-600 font-mono uppercase tracking-[0.2em] pointer-events-none">
-        {satLayer
-          ? 'Satellite imagery: Sentinel Hub · Copernicus / ESA'
-          : 'Flight radar: OpenSky Network · AirLabs'}
-      </div>
-
-      {/* Category legend */}
-      <div className="absolute bottom-4 left-4 flex flex-col gap-1.5 bg-black/75 border border-radar-border rounded px-3 py-2.5 backdrop-blur-sm pointer-events-none">
-        <span className="text-[9px] text-gray-500 font-mono uppercase tracking-[0.18em] mb-0.5">Event Layer</span>
-        {(Object.entries(CATEGORY_CONFIG) as [EventCategory, typeof CATEGORY_CONFIG[EventCategory]][]).map(([id, cfg]) => (
-          <div key={id} className="flex items-center gap-2">
-            <cfg.Icon className="w-3 h-3 flex-shrink-0" style={{ color: cfg.color }} />
-            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cfg.color, boxShadow: `0 0 5px ${cfg.color}80` }} />
-            <span className="text-[9px] text-gray-400 font-mono uppercase tracking-wide">{cfg.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Active count badge */}
+      {/* Active event count — top left */}
       {events.length > 0 && (
-        <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/75 border border-radar-border rounded px-2.5 py-1.5 pointer-events-none backdrop-blur-sm">
+        <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/70 border border-radar-border rounded px-2 py-1 pointer-events-none backdrop-blur-sm">
           <span className="w-1.5 h-1.5 rounded-full bg-radar-red animate-pulse" />
           <span className="text-[9px] font-mono text-radar-red uppercase tracking-widest">
-            {events.length} active pulse{events.length !== 1 ? 's' : ''}
+            {events.length} signals
           </span>
         </div>
       )}
 
-      {/* Hint */}
-      {ready && (
-        <div className="absolute bottom-4 right-4 pointer-events-none text-right">
-          <div className="text-[8px] text-gray-600 font-mono uppercase tracking-widest">Scroll · Drag</div>
-          <div className="text-[8px] text-gray-700 font-mono">Click event for intel</div>
+      {/* Dynamic legend — only categories with live events */}
+      {activeCategoryIds.length > 0 && (
+        <div className="absolute bottom-3 left-3 flex flex-col gap-1 bg-black/70 border border-radar-border rounded px-2.5 py-2 backdrop-blur-sm pointer-events-none">
+          <span className="text-[8px] text-gray-600 font-mono uppercase tracking-widest mb-0.5">Layer</span>
+          {activeCategoryIds.map(id => {
+            const cfg = CATEGORY_CONFIG[id];
+            if (!cfg) return null;
+            return (
+              <div key={id} className="flex items-center gap-1.5">
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ background: cfg.color, boxShadow: `0 0 4px ${cfg.color}90` }}
+                />
+                <span className="text-[8px] text-gray-400 font-mono">{cfg.label}</span>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -334,7 +278,7 @@ export default function GlobeMap({ events, onEventClick, view, liteMode = false 
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#020407] pointer-events-none z-10">
           <span className="text-[10px] text-gray-500 font-mono uppercase tracking-widest animate-pulse">
-            Initialising Globe Renderer...
+            Initialising Globe...
           </span>
         </div>
       )}

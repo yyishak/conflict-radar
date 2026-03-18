@@ -60,44 +60,69 @@ export type { LucideIcon };
 
 export const ALL_CATEGORIES = Object.keys(CATEGORY_CONFIG) as EventCategory[];
 
-/** Map a raw event `type` string to a display category. */
-export function classifyEvent(type: string | null | undefined): EventCategory {
-  const t = (type ?? '').toLowerCase();
+/**
+ * Map a raw event type + source to a display category.
+ * Source-based rules run first (most reliable), then type keyword fallbacks.
+ */
+export function classifyEvent(
+  type: string | null | undefined,
+  source?: string | null,
+): EventCategory {
+  const t = (type   ?? '').toLowerCase();
+  const s = (source ?? '').toLowerCase();
+
+  // ── Source-based rules (authoritative) ──────────────────────────────────────
+  if (s.includes('opensky') || s.includes('airlabs'))           return 'Flight';
+  if (s.includes('acled'))                                       return 'War';
+  if (s.includes('gdacs') || s.includes('reliefweb') || s.includes('hdx')) return 'Drought';
+
+  // ── ACLED canonical type strings ─────────────────────────────────────────────
+  if (
+    t.includes('battle') || t.includes('violence against') ||
+    t.includes('strategic development') || t.includes('riots') ||
+    t.includes('remote violence')
+  ) return 'War';
 
   if (
-    t.includes('missile') || t.includes('airstrike') || t.includes('air strike') ||
-    t.includes('bomb') || t.includes('explosion') || t.includes('rocket') ||
-    t.includes('shelling') || t.includes('ihl') || t.includes('artillery')
+    t.includes('explosions') || t.includes('missile') || t.includes('airstrike') ||
+    t.includes('air strike') || t.includes('bomb') || t.includes('rocket') ||
+    t.includes('shelling') || t.includes('artillery')
   ) return 'Missile';
 
+  // ── GDACS / disaster type strings ────────────────────────────────────────────
   if (
-    t.includes('drought') || t.includes('flood') || t.includes('famine') ||
-    t.includes('disaster') || t.includes('hazard') || t.includes('earthquake') ||
-    t.includes('locust') || t.includes('hunger') || t.includes('health') ||
-    t.includes('disease') || t.includes('epidemic')
+    t.includes('fire') || t.includes('flood') || t.includes('cyclone') ||
+    t.includes('earthquake') || t.includes('volcano') || t.includes('drought') ||
+    t.includes('famine') || t.includes('disaster') || t.includes('hazard') ||
+    t.includes('locust') || t.includes('disease') || t.includes('epidemic')
   ) return 'Drought';
 
+  // ── Flight / aviation ────────────────────────────────────────────────────────
   if (
     t.includes('flight') || t.includes('aviation') || t.includes('aircraft') ||
     t.includes('drone') || t.includes('uav') || t.includes('airspace')
   ) return 'Flight';
 
+  // ── Political / governance ───────────────────────────────────────────────────
   if (
     t.includes('political') || t.includes('protest') || t.includes('election') ||
     t.includes('diplomatic') || t.includes('coup') || t.includes('government') ||
     t.includes('rally') || t.includes('demonstration')
   ) return 'Political';
 
+  // ── Conflict keyword fallback ────────────────────────────────────────────────
   if (
-    t.includes('conflict') || t.includes('violence') || t.includes('battle') ||
-    t.includes('fight') || t.includes('war') || t.includes('clash') ||
-    t.includes('attack') || t.includes('killing') || t.includes('death') ||
-    t.includes('armed') || t.includes('militia') || t.includes('ambush')
+    t.includes('conflict') || t.includes('violence') || t.includes('fight') ||
+    t.includes('war') || t.includes('clash') || t.includes('attack') ||
+    t.includes('killing') || t.includes('death') || t.includes('armed') ||
+    t.includes('militia') || t.includes('ambush') || t.includes('troops') ||
+    t.includes('military')
   ) return 'War';
 
+  // ── Satellite / EO ───────────────────────────────────────────────────────────
   if (
     t.includes('satellite') || t.includes('sentinel') || t.includes('burn scar') ||
-    t.includes('burn area') || t.includes('satellite detection') || t.includes('sar') ||
+    t.includes('burn area') || t.includes('satellite detection') ||
     t.includes('ndvi') || t.includes('earth observation')
   ) return 'Satellite';
 

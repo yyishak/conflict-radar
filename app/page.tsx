@@ -47,7 +47,7 @@ export default function Home() {
   const enrichEvent = (ev: any) => ({
     ...ev,
     current_score: (ev.risk_level ?? 1) * 2,
-    category: classifyEvent(ev.type),
+    category: classifyEvent(ev.type, ev.source),
     text: ev.description?.substring(0, 30) || 'Intelligence Pulse',
   });
 
@@ -110,21 +110,9 @@ export default function Home() {
               liteMode={liteMode}
             />
 
-            {/* Overlay label */}
-            <div className="absolute top-6 left-6 z-10 pointer-events-none">
-              <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-2 text-white drop-shadow-lg">
-                Global Situation
-                <span className="text-[10px] bg-radar-red text-white px-2 py-0.5 rounded font-mono">LIVE FEED</span>
-              </h2>
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
-                Focus Layer: Ethiopia Administrative States
-              </p>
-            </div>
-
-            {/* Map controls */}
-            <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-2">
-              <div className="map-control-pill bg-black/75 border border-white/10 rounded px-2 py-1 flex items-center gap-1.5 backdrop-blur-sm">
-                <span className="text-[8px] text-gray-400 font-mono uppercase tracking-widest">View</span>
+            {/* Compact map controls — top right only */}
+            <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+              <div className="map-control-pill bg-black/75 border border-white/10 rounded px-2 py-1 flex items-center gap-1 backdrop-blur-sm">
                 {(['ethiopia', 'horn', 'global'] as const).map(v => (
                   <button
                     key={v}
@@ -142,11 +130,13 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setLiteMode(l => !l)}
-                className="map-control-pill bg-black/75 border border-white/10 rounded px-2 py-0.5 text-[8px] font-mono text-gray-400 hover:text-white backdrop-blur-sm transition-colors"
+                className={`map-control-pill bg-black/75 border rounded px-2 py-1 text-[8px] font-mono backdrop-blur-sm transition-colors ${
+                  liteMode ? 'border-radar-red/50 text-radar-red' : 'border-white/10 text-gray-400 hover:text-white'
+                }`}
                 aria-pressed={liteMode}
-                aria-label="Toggle lite mode for low GPU devices"
+                aria-label="Toggle lite mode"
               >
-                Lite Mode: {liteMode ? 'On' : 'Off'}
+                Lite
               </button>
             </div>
           </section>
@@ -178,11 +168,22 @@ export default function Home() {
             view={viewPreset}
             liteMode={liteMode}
           />
-          <div className="absolute top-4 left-4 z-10 pointer-events-none">
-            <h2 className="text-xl font-black uppercase tracking-tight text-white flex items-center gap-2">
-              Global Situation
-              <span className="text-[9px] bg-radar-red text-white px-2 py-0.5 rounded font-mono">LIVE</span>
-            </h2>
+          {/* Compact view controls — mobile */}
+          <div className="absolute top-3 right-3 z-10">
+            <div className="map-control-pill bg-black/75 border border-white/10 rounded px-2 py-1 flex items-center gap-1 backdrop-blur-sm">
+              {(['ethiopia', 'horn', 'global'] as const).map(v => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setViewPreset(v)}
+                  className={`text-[8px] font-mono px-1.5 py-0.5 rounded transition-colors ${
+                    viewPreset === v ? 'bg-radar-red text-white' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {v === 'ethiopia' ? 'ET' : v === 'horn' ? 'HoA' : 'GL'}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 
